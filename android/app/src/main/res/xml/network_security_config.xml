@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Indolj POS API is served over plain HTTP (http://{merchant-slug}.indoljpos.com).
+  Scope the cleartext exception to that domain instead of allowing cleartext traffic app-wide.
+  `localhost` is also allowed cleartext — that's the Metro dev bundler connection in debug
+  builds (via `adb reverse`), not a remote host, so it carries no real security cost.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">indoljpos.com</domain>
+    </domain-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

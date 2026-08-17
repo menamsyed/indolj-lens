@@ -1,0 +1,71 @@
+# .antigravityrules — AI Operational Directives & Code Quality Rules
+
+> **Master Context Reference**: Always consult [CONTEXT.md](file:///Users/macbook/indolj-space%20/IndoljMerchantApp/CONTEXT.md) and [.antigravity/rules/](file:///Users/macbook/indolj-space%20/IndoljMerchantApp/.antigravity/rules) before analyzing, modifying, or creating code in this repository.
+
+---
+
+## 1. Core Operating Principles
+
+1. **Context-First Development**:
+   - Every file edit or new feature must align with the architectural patterns and directory structure documented in [CONTEXT.md](file:///Users/macbook/indolj-space%20/IndoljMerchantApp/CONTEXT.md).
+   - Never introduce competing state managers, styling paradigms, or build tools without explicit architectural approval.
+
+2. **No Unverified Assumptions**:
+   - Do not guess module interfaces, prop shapes, or API schemas. Always inspect existing files using code search and file viewing tools before writing consuming code.
+
+3. **Cognitive Scaffolding (Think → Plan → Execute)**:
+   - Operate through internal reasoning (Think), systematic roadmap decomposition (Plan), and complete non-truncated implementation (Execute) as specified in [.antigravity/rules/prompt-optimizer.md](file:///Users/macbook/indolj-space%20/IndoljMerchantApp/.antigravity/rules/prompt-optimizer.md).
+
+4. **Empirical Verification Required**:
+   - Never declare a task complete without running relevant build (`yarn lint`, `tsc`) or test (`yarn test`) verification commands.
+
+---
+
+## 2. Code Quality & Technical Standards
+
+### TypeScript & Typing Rules
+- **Strict Typing**: Implicit or explicit `any` types are strictly forbidden. Use explicit interfaces, type aliases, or generics.
+- **Null Safety**: Always handle `null` and `undefined` states explicitly before dereferencing properties.
+- **Export Discipline**: Use named exports for components, hooks, and utilities. Avoid default exports except for top-level screen or entry components required by routing frameworks.
+
+### React Native & Component Rules
+- **Container Pattern (UI & Logic Separation)**: Use the Container hook pattern to cleanly separate UI components from business/logical code. For example, screen components (e.g. `LoginScreen`) must contain presentation JSX only, while all logical implementations, handlers, and state management must reside in a dedicated container hook (e.g. `useLoginContainer`).
+- **Stack Navigation Wrappers**: Application routing must be organized using two main stack wrappers:
+  - `AuthStackWrapper`: Contains all authentication flow screens (e.g. Login, Forgot Password, Reset Password).
+  - `AppStackWrapper`: Wraps all authenticated merchant application screens (e.g. Dashboard, Orders, Inventory, Settings).
+- **Styling**: Always use `StyleSheet.create()` or centralized design tokens from `styles/theme.ts`. Inline style objects (e.g. `style={{ flex: 1 }}`) on JSX elements are **FORBIDDEN**.
+- **Component Primitives**: Check existing primitives in `src/components/ui/` before creating new basic UI components.
+- **Platform Parity**: Ensure logic and styling function correctly on both iOS and Android. Use `Platform.select()` for small platform differences, or `.ios.tsx` / `.android.tsx` files for major implementation divergences.
+
+### State Management & Side Effects (Lean Architecture)
+- **API Services**: Modular API service abstractions (`src/api/services/`) powered by a central Axios HTTP client (`src/api/client.ts`).
+- **Global Auth & Client State**: `AuthContext` for authentication lifecycle (Token, UserProfile, Permissions) and Zustand stores (`src/stores/`) for global client UI state.
+- **Session Storage**: `@react-native-async-storage/async-storage` for token persistence and session hydration.
+
+---
+
+## 3. Testing & Verification Requirements
+
+- **Test-Driven / Test-Backed Development**: Every new utility, custom hook, or state store must include corresponding Jest tests in `__tests__/` or co-located `.test.ts(x)` files.
+- **No Mock Swallowing**: Unit tests must test actual contract behavior. Never comment out failing assertions or replace failing code with empty fallback objects to force tests to pass.
+
+---
+
+## 4. Forbidden Patterns
+
+❌ **DO NOT** use inline style objects directly in JSX components.  
+❌ **DO NOT** use `any` types or disable TypeScript strict checks with `@ts-ignore` unless explicitly authorized.  
+❌ **DO NOT** perform API data fetching inside `useEffect` hooks.  
+❌ **DO NOT** write arbitrary pixel offset calculations in UI components without deriving bounds dynamically.  
+❌ **DO NOT** hardcode raw hex color codes or font sizes in feature components—always reference theme tokens.  
+❌ **DO NOT** alter native files in `android/` or `ios/` without documenting native configuration dependencies.
+
+---
+
+## 5. Pre-Commit / Pre-Response Checklist
+
+Before presenting completed code modifications to the user, ensure:
+1. TypeScript compilation passes with zero errors (`tsc --noEmit`).
+2. Linter rules pass (`yarn lint`).
+3. Relevant unit tests pass (`yarn test`).
+4. File paths and code symbols are properly linked with `file://` scheme in markdown summaries.

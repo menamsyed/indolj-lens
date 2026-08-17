@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>IndoljMerchantApp</string>
+	<string>Indolj Lens</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -33,6 +33,18 @@
 		<false/>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
+		<!-- The Indolj POS API is served over plain HTTP (http://{merchant-slug}.indoljpos.com) —
+		     scope the exception to that domain instead of disabling ATS globally. -->
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>indoljpos.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
