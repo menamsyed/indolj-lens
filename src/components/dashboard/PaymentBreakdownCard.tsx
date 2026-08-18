@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
-import { VectorIcon } from '../common/VectorIcon';
+import { IconName, VectorIcon } from '../common/VectorIcon';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography, fontWeights } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale } from '../../utils/responsive';
 
 export interface PaymentLegendItem {
   name: string;
@@ -25,6 +27,15 @@ const getDefaultLegend = (colors: Colors): PaymentLegendItem[] => [
   { name: 'Cash', amountDisplay: '38.1K', percentage: 100, color: colors.chart.green },
 ];
 
+// The API's method name is free-form ("Cash", "Card", "Online", "Bank Transfer", ...) — match by
+// keyword rather than an exact list so unseen method names still get a sensible icon.
+function getPaymentIconName(methodName: string): IconName {
+  const label = methodName.toLowerCase();
+  if (label.includes('cash')) return 'cash';
+  if (label.includes('card')) return 'credit-card';
+  return 'wallet';
+}
+
 export function PaymentBreakdownCard({
   totalAmount = '38.1K',
   legend,
@@ -32,7 +43,8 @@ export function PaymentBreakdownCard({
   isLoading = false,
 }: PaymentBreakdownCardProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
 
   const activeLegend = useMemo(() => legend ?? getDefaultLegend(colors), [legend, colors]);
   const defaultPieData = useMemo(() => [{ value: 100, color: colors.chart.green }], [colors]);
@@ -87,7 +99,7 @@ export function PaymentBreakdownCard({
             <View style={styles.progressHeader}>
               <View style={styles.leftGroup}>
                 <View style={[styles.cashIconBox, { backgroundColor: colors.chart.greenBg }]}>
-                  <VectorIcon name="check" size={14} color={item.color || colors.chart.green} />
+                  <VectorIcon name={getPaymentIconName(item.name)} size={14} color={item.color || colors.chart.green} />
                 </View>
                 <Text style={[typography.bodyMedium, styles.methodName]}>{item.name}</Text>
               </View>
@@ -113,107 +125,111 @@ export function PaymentBreakdownCard({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  cardContainer: {
-    backgroundColor: colors.surface.card,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    shadowColor: colors.neutral.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  cardTitle: {
-    fontSize: 14,
-    color: colors.text.primary,
-  },
-  subtitleText: {
-    fontSize: 11,
-    color: colors.text.muted,
-  },
-  centerChartWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 12,
-  },
-  centerBadge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerSub: {
-    fontSize: 10,
-    color: colors.text.muted,
-  },
-  centerText: {
-    fontSize: 13.5,
-    color: colors.text.primary,
-    fontWeight: fontWeights.bold,
-  },
-  progressCard: {
-    backgroundColor: colors.neutral.gray50,
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    marginTop: 8,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  leftGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cashIconBox: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    backgroundColor: colors.chart.greenBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  methodName: {
-    fontSize: 13.5,
-    color: colors.text.primary,
-    fontWeight: fontWeights.semiBold,
-  },
-  amountPercentage: {
-    fontSize: 13,
-    color: colors.chart.green,
-    fontWeight: fontWeights.bold,
-  },
-  progressTrack: {
-    width: '100%',
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.neutral.gray200,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: colors.chart.green,
-    borderRadius: 3,
-  },
-  emptyText: {
-    fontSize: 12,
-    color: colors.text.muted,
-    textAlign: 'center',
-    paddingVertical: 8,
-  },
-});
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
+  const cashIconBoxSize = scale(26, metrics);
+
+  return StyleSheet.create({
+    cardContainer: {
+      backgroundColor: colors.surface.card,
+      borderRadius: moderateScale(20, 0.5, metrics),
+      padding: moderateScale(16, 0.5, metrics),
+      marginBottom: scale(16, metrics),
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      marginBottom: scale(14, metrics),
+    },
+    cardTitle: {
+      fontSize: moderateScale(14, 0.3, metrics),
+      color: colors.text.primary,
+    },
+    subtitleText: {
+      fontSize: moderateScale(11, 0.3, metrics),
+      color: colors.text.muted,
+    },
+    centerChartWrapper: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginVertical: scale(12, metrics),
+    },
+    centerBadge: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    centerSub: {
+      fontSize: moderateScale(10, 0.3, metrics),
+      color: colors.text.muted,
+    },
+    centerText: {
+      fontSize: moderateScale(13.5, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.bold,
+    },
+    progressCard: {
+      backgroundColor: colors.neutral.gray50,
+      borderRadius: moderateScale(14, 0.5, metrics),
+      padding: moderateScale(12, 0.5, metrics),
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      marginTop: scale(8, metrics),
+    },
+    progressHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: scale(8, metrics),
+    },
+    leftGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    cashIconBox: {
+      width: cashIconBoxSize,
+      height: cashIconBoxSize,
+      borderRadius: moderateScale(6, 0.5, metrics),
+      backgroundColor: colors.chart.greenBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: scale(8, metrics),
+    },
+    methodName: {
+      fontSize: moderateScale(13.5, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.semiBold,
+    },
+    amountPercentage: {
+      fontSize: moderateScale(13, 0.3, metrics),
+      color: colors.chart.green,
+      fontWeight: fontWeights.bold,
+    },
+    progressTrack: {
+      width: '100%',
+      height: scale(6, metrics),
+      borderRadius: moderateScale(3, 0.5, metrics),
+      backgroundColor: colors.neutral.gray200,
+      overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: '100%',
+      backgroundColor: colors.chart.green,
+      borderRadius: moderateScale(3, 0.5, metrics),
+    },
+    emptyText: {
+      fontSize: moderateScale(12, 0.3, metrics),
+      color: colors.text.muted,
+      textAlign: 'center',
+      paddingVertical: scale(8, metrics),
+    },
+  });
+};
 
 export default PaymentBreakdownCard;

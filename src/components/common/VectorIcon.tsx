@@ -30,6 +30,9 @@ export type IconName =
   | 'grid'
   | 'cart'
   | 'calculator'
+  | 'cash'
+  | 'credit-card'
+  | 'wallet'
   | 'settings'
   | 'filter'
   | 'moon'
@@ -68,6 +71,32 @@ export function VectorIcon({
           <Rect x="4" y="2" width="16" height="20" rx="2" />
           <Rect x="8" y="5" width="8" height="3" />
           <Path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" />
+        </Svg>
+      );
+
+    case 'cash':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <Rect x="2" y="6" width="20" height="12" rx="2" />
+          <Circle cx="12" cy="12" r="2.5" />
+          <Path d="M6 12h.01M18 12h.01" />
+        </Svg>
+      );
+
+    case 'credit-card':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <Rect x="2" y="5" width="20" height="14" rx="2" />
+          <Path d="M2 10h20" />
+          <Path d="M6 15h4" />
+        </Svg>
+      );
+
+    case 'wallet':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+          <Path d="M16 12h3a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-3a2 2 0 0 1 0-4z" />
         </Svg>
       );
 
