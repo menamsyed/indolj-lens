@@ -7,12 +7,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useWidgetsData } from '../hooks/useWidgetsData';
 import { useDateBranchFilter, buildBranchOptionsList } from '../hooks/useDateBranchFilter';
+import { useResponsive } from '../hooks/useResponsive';
 import { Colors } from '../styles/colors';
 import { SaleSummaryRecord } from '../types/dashboard';
+import { ScreenMetrics, scale, tabletContentCap, verticalScale } from '../utils/responsive';
+import { DashboardStackParamList } from '../navigation/DashboardStackNavigator';
 
 import { DashboardHeader } from '../components/dashboard/DashboardHeader';
 import { FloatingFilterBar } from '../components/dashboard/FloatingFilterBar';
@@ -25,20 +30,22 @@ import { SalesTrendCard } from '../components/dashboard/SalesTrendCard';
 import { ReportNavigationCard } from '../components/dashboard/ReportNavigationCard';
 import { FilterBottomSheet } from '../components/dashboard/FilterBottomSheet';
 import { LogoutConfirmModal } from '../components/dashboard/LogoutConfirmModal';
-import { SaleSummaryView } from '../components/dashboard/SaleSummaryView';
-import { MatrixReportView } from '../components/dashboard/MatrixReportView';
 
 export function DashboardScreen(): React.JSX.Element {
   const { user, logout } = useAuth();
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const [activeSubView, setActiveSubView] = useState<'main' | 'sale-summary' | 'branch-wise' | 'item-wise' | 'category-wise' | 'online-orders'>('main');
+  const metrics = useResponsive();
+  const navigation = useNavigation<NativeStackNavigationProp<DashboardStackParamList>>();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
 
   const {
     selectedDateRange,
     selectedBranch,
+    customFromDate,
+    customToDate,
     displayDateLabel,
+    dateRangeLabel,
     isFilterSheetOpen,
     isDateDefault,
     isBranchDefault,
@@ -89,6 +96,8 @@ export function DashboardScreen(): React.JSX.Element {
     refetch,
   } = useWidgetsData({
     dateRangePreset: selectedDateRange,
+    customFromDate: customFromDate ?? undefined,
+    customToDate: customToDate ?? undefined,
     selectedBranchId: selectedBranch.id,
   });
 
@@ -109,80 +118,6 @@ export function DashboardScreen(): React.JSX.Element {
     setIsLogoutModalOpen(false);
     logout();
   };
-
-  // Sub-view renders: Matrix detail reports
-  if (activeSubView === 'sale-summary') {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.brand.primary} />
-        <SaleSummaryView
-          records={mappedSummaryRecords}
-          totalSale={totalSalesAmount}
-          onBackPress={() => setActiveSubView('main')}
-        />
-      </SafeAreaView>
-    );
-  }
-
-  if (activeSubView === 'branch-wise') {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.brand.primary} />
-        <MatrixReportView
-          title="Branch Wise Sales"
-          tableData={branchWise}
-          defaultHead={['Branch Name', 'Sales', 'Orders', 'Share %']}
-          defaultRows={[]}
-          onBackPress={() => setActiveSubView('main')}
-        />
-      </SafeAreaView>
-    );
-  }
-
-  if (activeSubView === 'item-wise') {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.brand.primary} />
-        <MatrixReportView
-          title="Item Wise Sales"
-          tableData={itemWise}
-          defaultHead={['Item Name', 'Sales', 'Qty', 'Share %']}
-          defaultRows={[]}
-          onBackPress={() => setActiveSubView('main')}
-        />
-      </SafeAreaView>
-    );
-  }
-
-  if (activeSubView === 'category-wise') {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.brand.primary} />
-        <MatrixReportView
-          title="Category Wise Sales"
-          tableData={categoryWise}
-          defaultHead={['Category Name', 'Sales', 'Qty', 'Share %']}
-          defaultRows={[]}
-          onBackPress={() => setActiveSubView('main')}
-        />
-      </SafeAreaView>
-    );
-  }
-
-  if (activeSubView === 'online-orders') {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.brand.primary} />
-        <MatrixReportView
-          title="Online Orders List"
-          tableData={newOrderList}
-          defaultHead={['Token no.', 'Time', 'Branch', 'Amount']}
-          defaultRows={[]}
-          onBackPress={() => setActiveSubView('main')}
-        />
-      </SafeAreaView>
-    );
-  }
 
   // Live Metrics Array for SalesOverviewCard (Dynamic Live API Binding)
   const liveOverviewMetrics = [
@@ -264,8 +199,6 @@ export function DashboardScreen(): React.JSX.Element {
             isLoading={isLoading}
           />
 
-
-
           {/* 7. Sales Trend */}
           <SalesTrendCard
             totalAmount={trendTotalAmount}
@@ -278,7 +211,12 @@ export function DashboardScreen(): React.JSX.Element {
           <ReportNavigationCard
             title="Sale Summary"
             subtitle="Tap to view report"
-            onPress={() => setActiveSubView('sale-summary')}
+            onPress={() => navigation.navigate('ReportDetail', {
+              reportType: 'sale-summary',
+              records: mappedSummaryRecords,
+              totalSale: totalSalesAmount,
+              dateRangeLabel,
+            })}
             isLoading={isLoading}
           />
 
@@ -286,7 +224,13 @@ export function DashboardScreen(): React.JSX.Element {
           <ReportNavigationCard
             title="Branch Wise Sales"
             subtitle="Tap to view report"
-            onPress={() => setActiveSubView('branch-wise')}
+            onPress={() => navigation.navigate('ReportDetail', {
+              reportType: 'branch-wise',
+              title: 'Branch Wise Sales',
+              tableData: branchWise,
+              defaultHead: ['Branch Name', 'Sales', 'Orders', 'Share %'],
+              dateRangeLabel,
+            })}
             isLoading={isLoading}
           />
 
@@ -294,7 +238,13 @@ export function DashboardScreen(): React.JSX.Element {
           <ReportNavigationCard
             title="Item Wise Sales"
             subtitle="Tap to view report"
-            onPress={() => setActiveSubView('item-wise')}
+            onPress={() => navigation.navigate('ReportDetail', {
+              reportType: 'item-wise',
+              title: 'Item Wise Sales',
+              tableData: itemWise,
+              defaultHead: ['Item Name', 'Sales', 'Qty', 'Share %'],
+              dateRangeLabel,
+            })}
             isLoading={isLoading}
           />
 
@@ -302,7 +252,13 @@ export function DashboardScreen(): React.JSX.Element {
           <ReportNavigationCard
             title="Category Wise Sales"
             subtitle="Tap to view report"
-            onPress={() => setActiveSubView('category-wise')}
+            onPress={() => navigation.navigate('ReportDetail', {
+              reportType: 'category-wise',
+              title: 'Category Wise Sales',
+              tableData: categoryWise,
+              defaultHead: ['Category Name', 'Sales', 'Qty', 'Share %'],
+              dateRangeLabel,
+            })}
             isLoading={isLoading}
           />
 
@@ -310,7 +266,13 @@ export function DashboardScreen(): React.JSX.Element {
           <ReportNavigationCard
             title="Online Orders List"
             subtitle="Tap to view report"
-            onPress={() => setActiveSubView('online-orders')}
+            onPress={() => navigation.navigate('ReportDetail', {
+              reportType: 'online-orders',
+              title: 'Online Orders List',
+              tableData: newOrderList,
+              defaultHead: ['Token no.', 'Time', 'Branch', 'Amount'],
+              dateRangeLabel,
+            })}
             isLoading={isLoading}
           />
         </ScrollView>
@@ -346,7 +308,7 @@ export function DashboardScreen(): React.JSX.Element {
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.brand.primary,
@@ -359,8 +321,9 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 110,
+    padding: scale(16, metrics),
+    paddingBottom: verticalScale(110, metrics),
+    ...tabletContentCap(metrics),
   },
 });
 
