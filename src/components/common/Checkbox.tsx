@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
+import { ScreenMetrics, minTouchHitSlop, moderateScale, scale } from '../../utils/responsive';
 import { VectorIcon } from './VectorIcon';
 
 export interface CheckboxProps {
@@ -19,7 +21,8 @@ export function Checkbox({
   disabled = false,
 }: CheckboxProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
 
   const toggle = (): void => {
     if (!disabled) {
@@ -33,6 +36,7 @@ export function Checkbox({
       onPress={toggle}
       activeOpacity={0.7}
       disabled={disabled}
+      hitSlop={minTouchHitSlop(34)}
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
     >
@@ -52,21 +56,21 @@ export function Checkbox({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: moderateScale(6, 0.5, metrics),
   },
   box: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: scale(22, metrics),
+    height: scale(22, metrics),
+    borderRadius: moderateScale(6, 0.5, metrics),
     borderWidth: 2,
     borderColor: colors.border.dark,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: scale(10, metrics),
     backgroundColor: colors.surface.background,
   },
   boxChecked: {

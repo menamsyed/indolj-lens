@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { fontWeights } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, verticalScale } from '../../utils/responsive';
 
 export interface CustomButtonProps {
   title: string;
@@ -25,7 +27,8 @@ export function CustomButton({
   variant = 'primary',
 }: CustomButtonProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const isInteractive = !loading && !disabled;
 
   return (
@@ -62,13 +65,13 @@ export function CustomButton({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => StyleSheet.create({
   button: {
-    height: 52,
-    borderRadius: 14,
+    height: Math.max(44, verticalScale(52, metrics)),
+    borderRadius: moderateScale(14, 0.5, metrics),
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: moderateScale(20, 0.5, metrics),
   },
   primaryButton: {
     backgroundColor: colors.brand.primary,
@@ -88,7 +91,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     backgroundColor: colors.neutral.disabledBtn,
   },
   text: {
-    fontSize: 16,
+    fontSize: moderateScale(16, 0.3, metrics),
     fontWeight: fontWeights.bold,
   },
   activeText: {

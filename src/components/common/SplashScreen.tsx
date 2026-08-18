@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { fontWeights } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale, verticalScale } from '../../utils/responsive';
 
 // Logo asset path
 const LOGO_SOURCE = require('../../assets/logo.png');
@@ -22,7 +24,8 @@ export interface SplashScreenProps {
 
 export function SplashScreen({ message }: SplashScreenProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
@@ -73,7 +76,7 @@ export function SplashScreen({ message }: SplashScreenProps): React.JSX.Element 
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.neutral.white,
@@ -82,12 +85,12 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: moderateScale(20, 0.5, metrics),
   },
   logoWrapper: {
     width: '90%',
-    maxWidth: 440,
-    height: 240,
+    maxWidth: scale(440, metrics),
+    height: verticalScale(240, metrics),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -96,8 +99,8 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     height: '100%',
   },
   statusText: {
-    marginTop: 24,
-    fontSize: 14,
+    marginTop: verticalScale(24, metrics),
+    fontSize: moderateScale(14, 0.3, metrics),
     color: colors.neutral.gray500,
     fontWeight: fontWeights.medium,
   },

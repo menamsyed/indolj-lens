@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { IconName, VectorIcon } from './VectorIcon';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography, fontWeights } from '../../styles/typography';
+import { ScreenMetrics, minTouchHitSlop, moderateScale, scale } from '../../utils/responsive';
 
 export interface CustomPillInputProps {
   label: string;
@@ -41,7 +43,8 @@ export function CustomPillInput({
   disabled = false,
 }: CustomPillInputProps): React.JSX.Element {
   const { colors, isDarkMode } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const inputRef = useRef<TextInput>(null);
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(!secureTextEntry);
@@ -106,6 +109,7 @@ export function CustomPillInput({
               style={styles.eyeButton}
               onPress={togglePasswordVisibility}
               activeOpacity={0.7}
+              hitSlop={minTouchHitSlop(36)}
               accessibilityRole="button"
               accessibilityLabel={isPasswordVisible ? 'Hide password' : 'Show password'}
             >
@@ -123,17 +127,17 @@ export function CustomPillInput({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => StyleSheet.create({
   outerWrapper: {
-    marginBottom: 10,
+    marginBottom: scale(10, metrics),
   },
   pillContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.neutral.gray50,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: moderateScale(20, 0.5, metrics),
+    paddingHorizontal: moderateScale(12, 0.5, metrics),
+    paddingVertical: moderateScale(10, 0.5, metrics),
     borderWidth: 1.5,
     borderColor: 'transparent',
     overflow: 'hidden',
@@ -146,13 +150,15 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     borderColor: colors.status.error,
   },
   iconSquare: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    // Floors at 44dp — this square doubles as a visual icon chip AND sits within the
+    // overall touch area, so it must never scale below the accessible minimum.
+    width: Math.max(44, scale(44, metrics)),
+    height: Math.max(44, scale(44, metrics)),
+    borderRadius: moderateScale(14, 0.5, metrics),
     backgroundColor: colors.status.errorBg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: scale(14, metrics),
   },
   contentContainer: {
     flex: 1,
@@ -183,13 +189,13 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     flexShrink: 0,
   },
   eyeButton: {
-    padding: 8,
-    marginRight: 4,
+    padding: moderateScale(8, 0.5, metrics),
+    marginRight: scale(4, metrics),
   },
   errorText: {
-    marginTop: 4,
-    marginLeft: 14,
-    fontSize: 10.5,
+    marginTop: scale(4, metrics),
+    marginLeft: scale(14, metrics),
+    fontSize: moderateScale(10.5, 0.3, metrics),
     color: colors.status.error,
     fontWeight: fontWeights.medium,
   },

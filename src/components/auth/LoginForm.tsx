@@ -13,8 +13,10 @@ import { CustomPillInput } from '../common/CustomPillInput';
 import { ToggleSwitch } from '../common/ToggleSwitch';
 import { VectorIcon } from '../common/VectorIcon';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale, verticalScale } from '../../utils/responsive';
 
 const SECURITY_ICON = require('../../assets/security.png');
 
@@ -39,7 +41,8 @@ export function LoginForm(): React.JSX.Element {
   } = useLoginContainer();
 
   const { colors, isDarkMode } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const showFingerprintButton = isBiometricAvailable && hasStoredSession;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -160,64 +163,68 @@ export function LoginForm(): React.JSX.Element {
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  formContainer: {
-    width: '100%',
-  },
-  toggleRow: {
-    marginBottom: 20,
-    marginTop: 4,
-  },
-  loginButtonFullWidth: {
-    width: '100%',
-    height: 52,
-    backgroundColor: colors.brand.primary,
-    borderRadius: 26,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.brand.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.65,
-  },
-  loginButtonText: {
-    color: colors.text.white,
-    marginRight: 8,
-  },
-  arrowIconWrapper: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  biometricContainerCentered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 22,
-  },
-  animatedBiometricCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 1.5,
-    borderColor: colors.brand.primary,
-    backgroundColor: colors.status.errorBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.brand.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-    padding: 12,
-  },
-  securityIconImage: {
-    width: '100%',
-    height: '100%',
-  },
-});
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
+  const biometricCircleSize = scale(64, metrics);
+
+  return StyleSheet.create({
+    formContainer: {
+      width: '100%',
+    },
+    toggleRow: {
+      marginBottom: verticalScale(20, metrics),
+      marginTop: verticalScale(4, metrics),
+    },
+    loginButtonFullWidth: {
+      width: '100%',
+      height: Math.max(44, verticalScale(52, metrics)),
+      backgroundColor: colors.brand.primary,
+      borderRadius: moderateScale(26, 0.5, metrics),
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: colors.brand.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    buttonDisabled: {
+      opacity: 0.65,
+    },
+    loginButtonText: {
+      color: colors.text.white,
+      marginRight: scale(8, metrics),
+    },
+    arrowIconWrapper: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    biometricContainerCentered: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: verticalScale(22, metrics),
+    },
+    animatedBiometricCircle: {
+      width: biometricCircleSize,
+      height: biometricCircleSize,
+      borderRadius: biometricCircleSize / 2,
+      borderWidth: 1.5,
+      borderColor: colors.brand.primary,
+      backgroundColor: colors.status.errorBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: colors.brand.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
+      padding: moderateScale(12, 0.5, metrics),
+    },
+    securityIconImage: {
+      width: '100%',
+      height: '100%',
+    },
+  });
+};
 
 export default LoginForm;
