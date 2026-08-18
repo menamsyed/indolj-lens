@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BranchItem } from '../api/services/branchService';
-import { computeDateRangeForPreset } from '../utils/dateRange';
+import { computeDateRangeForPreset, computeRawDateRangeForPreset, formatDateRangeLabel } from '../utils/dateRange';
 import { BranchOption, DateRangePreset } from '../types/dashboard';
 
 // "All Branches" sentinel prepended to whatever real branch list a screen has fetched — shared so
@@ -14,8 +14,8 @@ export function buildBranchOptionsList(branches: BranchItem[]): BranchOption[] {
     : [{ id: 'all', name: 'All Branches', isAll: true }];
 }
 
-const DEFAULT_DATE_RANGE: DateRangePreset = 'Today';
-const DEFAULT_BRANCH: BranchOption = { id: 'all', name: 'All Branches', isAll: true };
+export const DEFAULT_DATE_RANGE: DateRangePreset = 'Today';
+export const DEFAULT_BRANCH: BranchOption = { id: 'all', name: 'All Branches', isAll: true };
 
 export interface CustomDateRange {
   from: Date;
@@ -26,8 +26,11 @@ export interface UseDateBranchFilterResult {
   selectedDateRange: DateRangePreset;
   selectedBranch: BranchOption;
   displayDateLabel: string;
+  dateRangeLabel: string;
   from: string;
   to: string;
+  customFromDate: Date | null;
+  customToDate: Date | null;
   isFilterSheetOpen: boolean;
   isDateDefault: boolean;
   isBranchDefault: boolean;
@@ -38,10 +41,6 @@ export interface UseDateBranchFilterResult {
 }
 
 // Shared date-range/branch filter logic for screens that need their own independent copy of it
-// (Dashboard and Branches each hold their own instance — no state is shared between them).
-// Deliberately doesn't take/derive a branch options list: the caller's branch list usually comes
-// from a data hook (useWidgetsData/useBranches) that itself needs `selectedDateRange`/
-// `selectedBranch` as input, so building that list here would create a circular dependency.
 export function useDateBranchFilter(): UseDateBranchFilterResult {
   const [selectedDateRange, setSelectedDateRange] = useState<DateRangePreset>(DEFAULT_DATE_RANGE);
   const [customDateLabel, setCustomDateLabel] = useState<string>('');
@@ -79,6 +78,13 @@ export function useDateBranchFilter(): UseDateBranchFilterResult {
     customToDate ?? undefined
   );
 
+  const { fromDate, toDate } = computeRawDateRangeForPreset(
+    selectedDateRange,
+    customFromDate ?? undefined,
+    customToDate ?? undefined
+  );
+  const dateRangeLabel = formatDateRangeLabel(fromDate, toDate);
+
   const isDateDefault = selectedDateRange === DEFAULT_DATE_RANGE;
   const isBranchDefault = selectedBranch.id === DEFAULT_BRANCH.id;
 
@@ -86,8 +92,11 @@ export function useDateBranchFilter(): UseDateBranchFilterResult {
     selectedDateRange,
     selectedBranch,
     displayDateLabel,
+    dateRangeLabel,
     from,
     to,
+    customFromDate,
+    customToDate,
     isFilterSheetOpen,
     isDateDefault,
     isBranchDefault,
