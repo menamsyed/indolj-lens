@@ -30,17 +30,18 @@
 
 ### React Native & Component Rules
 - **Container Pattern (UI & Logic Separation)**: Use the Container hook pattern to cleanly separate UI components from business/logical code. For example, screen components (e.g. `LoginScreen`) must contain presentation JSX only, while all logical implementations, handlers, and state management must reside in a dedicated container hook (e.g. `useLoginContainer`).
-- **Stack Navigation Wrappers**: Application routing must be organized using two main stack wrappers:
-  - `AuthStackWrapper`: Contains all authentication flow screens (e.g. Login, Forgot Password, Reset Password).
-  - `AppStackWrapper`: Wraps all authenticated merchant application screens (e.g. Dashboard, Orders, Inventory, Settings).
-- **Styling**: Always use `StyleSheet.create()` or centralized design tokens from `styles/theme.ts`. Inline style objects (e.g. `style={{ flex: 1 }}`) on JSX elements are **FORBIDDEN**.
-- **Component Primitives**: Check existing primitives in `src/components/ui/` before creating new basic UI components.
+- **Stack Navigation Wrappers**: Application routing is organized using two top-level stack wrappers:
+  - `AuthStackWrapper`: Authentication flow screens (currently just Login).
+  - `AppStackWrapper`: Wraps `AppTabNavigator`, the bottom-tab navigator for all authenticated screens (Branches / Dashboard / Settings), rendered with a custom animated tab bar (`src/navigation/CustomTabBar.tsx`).
+- **Styling**: Always use `StyleSheet.create()` or centralized design tokens from `styles/colors.ts` / `styles/typography.ts` / `styles/theme.ts`. Inline style objects (e.g. `style={{ flex: 1 }}`) on JSX elements are **FORBIDDEN**. For theme-reactive (dark-mode-aware) styles, use the `const styles = useMemo(() => createStyles(colors), [colors])` pattern with `colors` from `useTheme()` — this still produces a `StyleSheet.create()`, just per theme.
+- **Component Primitives**: Check existing primitives in `src/components/common/` before creating new basic UI components.
 - **Platform Parity**: Ensure logic and styling function correctly on both iOS and Android. Use `Platform.select()` for small platform differences, or `.ios.tsx` / `.android.tsx` files for major implementation divergences.
 
 ### State Management & Side Effects (Lean Architecture)
 - **API Services**: Modular API service abstractions (`src/api/services/`) powered by a central Axios HTTP client (`src/api/client.ts`).
-- **Global Auth & Client State**: `AuthContext` for authentication lifecycle (Token, UserProfile, Permissions) and Zustand stores (`src/stores/`) for global client UI state.
-- **Session Storage**: `@react-native-async-storage/async-storage` for token persistence and session hydration.
+- **Global state**: three React Contexts only — `AuthContext` (session lifecycle: token, user profile, permissions, multi-tenant merchant host), `ThemeContext` (light/dark palette), `ToastContext` (transient notifications). There is no Zustand/Redux/other store library in this project — don't introduce one; add a fourth context or a container hook instead.
+- **Data fetching**: no React Query — container hooks (`src/hooks/`) own fetching via `useEffect` + `useCallback`, calling the `src/api/services/` functions directly and exposing loading/error state to the screen. This is the established pattern (see `useWidgetsData`, `useBranches`, `useBranchWiseSummaries`) — don't fetch from inside a screen/component body.
+- **Session Storage**: `@react-native-async-storage/async-storage` for token/theme persistence and session hydration; `react-native-keychain` for biometric-replay credentials.
 
 ---
 
@@ -55,7 +56,7 @@
 
 ❌ **DO NOT** use inline style objects directly in JSX components.  
 ❌ **DO NOT** use `any` types or disable TypeScript strict checks with `@ts-ignore` unless explicitly authorized.  
-❌ **DO NOT** perform API data fetching inside `useEffect` hooks.  
+❌ **DO NOT** perform API data fetching inside a screen or presentational component's body/effects — fetch inside a container hook (`useEffect`/`useCallback` there is the established pattern; see `useWidgetsData`) and pass the result down as props/return values.
 ❌ **DO NOT** write arbitrary pixel offset calculations in UI components without deriving bounds dynamically.  
 ❌ **DO NOT** hardcode raw hex color codes or font sizes in feature components—always reference theme tokens.  
 ❌ **DO NOT** alter native files in `android/` or `ios/` without documenting native configuration dependencies.
