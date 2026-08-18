@@ -120,10 +120,16 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
   // Scaled once per render from the live metrics — feeds both the StyleSheet values
   // below AND the SVG notch-path math, so the two can never drift out of sync.
+  // FAB_SIZE, NOTCH_WIDTH, and NOTCH_DEPTH all use `scale` (not verticalScale for the
+  // depth) deliberately: the FAB circle's bottom edge must stay shallower than the notch's
+  // curve by a fixed margin on every device, and that only holds if all three move
+  // together on the same ratio — mixing width- and height-based scaling here previously
+  // let the circle dip deeper than the curve on devices whose height ratio differs from
+  // width ratio (e.g. iPhone SE), closing the gap between the bubble and the cutout.
   const BAR_HEIGHT = verticalScale(64, metrics);
   const FAB_SIZE = scale(52, metrics);
   const NOTCH_WIDTH = scale(84, metrics);
-  const NOTCH_DEPTH = verticalScale(25, metrics);
+  const NOTCH_DEPTH = scale(25, metrics);
 
   const styles = useMemo(
     () => createStyles(metrics, BAR_HEIGHT, FAB_SIZE),
@@ -318,7 +324,9 @@ const createStyles = (metrics: ScreenMetrics, barHeight: number, fabSize: number
     },
     fabBubble: {
       position: 'absolute',
-      top: -verticalScale(34, metrics),
+      // Same scale() axis as fabSize/NOTCH_DEPTH above — see the comment where those are
+      // computed for why this can't use verticalScale without reopening the gap it controls.
+      top: -scale(38, metrics),
       width: fabSize,
       height: fabSize,
       borderRadius: fabSize / 2,
