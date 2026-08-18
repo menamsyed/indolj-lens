@@ -3,8 +3,10 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { VectorIcon } from '../common/VectorIcon';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography, fontWeights } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale } from '../../utils/responsive';
 
 export interface OnlineOrdersCardProps {
   onViewDetailsPress?: () => void;
@@ -16,7 +18,8 @@ export function OnlineOrdersCard({
   isLoading = false,
 }: OnlineOrdersCardProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const recentOrders = [
     { token: '#A55-3', time: '12:59 PM', orderType: 'Takeaway', amount: 'Rs.2,700' },
     { token: '#A55-7', time: '01:14 PM', orderType: 'Delivery', amount: 'Rs.1,450' },
@@ -78,12 +81,12 @@ export function OnlineOrdersCard({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => StyleSheet.create({
   cardContainer: {
     backgroundColor: colors.surface.card,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: moderateScale(20, 0.5, metrics),
+    padding: moderateScale(16, 0.5, metrics),
+    marginBottom: scale(16, metrics),
     borderWidth: 1,
     borderColor: colors.border.light,
     shadowColor: colors.neutral.black,
@@ -96,73 +99,73 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: scale(12, metrics),
   },
   cardTitle: {
-    fontSize: 14,
+    fontSize: moderateScale(14, 0.3, metrics),
     color: colors.text.primary,
   },
   viewDetailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: scale(4, metrics),
   },
   viewDetailsText: {
-    fontSize: 12,
+    fontSize: moderateScale(12, 0.3, metrics),
     color: colors.brand.primary,
     fontWeight: fontWeights.bold,
   },
   orderList: {
-    gap: 8,
+    gap: scale(8, metrics),
   },
   orderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.neutral.gray50,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: moderateScale(12, 0.5, metrics),
+    paddingHorizontal: moderateScale(12, 0.5, metrics),
+    paddingVertical: moderateScale(8, 0.5, metrics),
     borderWidth: 1,
     borderColor: colors.border.light,
   },
   tokenPill: {
     backgroundColor: colors.brand.tint,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: moderateScale(8, 0.5, metrics),
+    paddingVertical: moderateScale(4, 0.5, metrics),
+    borderRadius: moderateScale(6, 0.5, metrics),
   },
   tokenText: {
-    fontSize: 11,
+    fontSize: moderateScale(11, 0.3, metrics),
     color: colors.brand.primary,
     fontWeight: fontWeights.bold,
   },
   middleMeta: {
     flex: 1,
-    marginLeft: 10,
+    marginLeft: scale(10, metrics),
   },
   orderType: {
-    fontSize: 13,
+    fontSize: moderateScale(13, 0.3, metrics),
     color: colors.text.primary,
     fontWeight: fontWeights.semiBold,
   },
   timeText: {
     color: colors.text.muted,
-    marginTop: 1,
+    marginTop: scale(1, metrics),
   },
   amountText: {
-    fontSize: 13.5,
+    fontSize: moderateScale(13.5, 0.3, metrics),
     color: colors.text.primary,
     fontWeight: fontWeights.bold,
   },
   skeletonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    height: 42,
-    borderRadius: 12,
-    marginBottom: 8,
+    height: scale(42, metrics),
+    borderRadius: moderateScale(12, 0.5, metrics),
+    marginBottom: scale(8, metrics),
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: moderateScale(12, 0.5, metrics),
     backgroundColor: colors.neutral.gray50,
   },
 });

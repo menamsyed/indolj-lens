@@ -37,6 +37,21 @@ export interface UseWidgetsDataParams {
   selectedBranchId?: string | number;
 }
 
+// Converts "13:00" -> "01:PM", "00:00" -> "12:AM", "09:00" -> "09:AM" to match reference standard
+function formatHourLabel(hourStr: string): string {
+  const parts = hourStr.split(':');
+  const hourNum = parseInt(parts[0], 10);
+  if (isNaN(hourNum)) return hourStr;
+  
+  if (hourNum === 0) return '12:AM';
+  if (hourNum === 12) return '12:PM';
+  if (hourNum > 12) {
+    const h = hourNum - 12;
+    return `${h < 10 ? '0' + h : h}:PM`;
+  }
+  return `${hourNum < 10 ? '0' + hourNum : hourNum}:AM`;
+}
+
 export function useWidgetsData({
   dateRangePreset = 'Today',
   customFromDate,
@@ -79,17 +94,11 @@ export function useWidgetsData({
       const query = { from, to, branch_id: selectedBranchId };
 
       try {
-        // Priority phase — get-api-details + get-branch always fire first and are awaited before
-        // any other widget call goes out, matching the reference call graph (Endpoint A/B ahead of
-        // every Endpoint C). The registry isn't consumed for dynamic dispatch yet, but is fetched
-        // here so it stays first in the actual request order.
         const [, branchTuple] = await safeAllSettled([
           fetchWidgetRegistry(),
           fetchBranchSettings(),
         ]);
 
-        // [0]=pagination (scoped to caller's own branch), [1]=same scoped single-branch array,
-        // [2]=full branch dictionary keyed by id — this is the actual "all branches" source.
         if (branchTuple.status === 'fulfilled' && branchTuple.value?.[2] && typeof branchTuple.value[2] === 'object') {
           setBranches(Object.values(branchTuple.value[2]));
         } else {
@@ -194,16 +203,10 @@ export function useWidgetsData({
     loadData();
   }, [loadData]);
 
-  // sales-report's `items`/`previous` are arrays of {name, value} pairs (e.g. "Gross Sale"),
-  // not an object with those as direct keys — extractSalesMetrics does the name-based lookup.
   const metrics = extractSalesMetrics(salesReport?.items);
   const prevMetrics = extractSalesMetrics(salesReport?.previous);
   const hasPrevious = Boolean(salesReport?.previous && salesReport.previous.length > 0);
 
-  // "Total Sales" headline is sourced from the dedicated branch-wise-sales widget's own `total`
-  // field — it's the endpoint purpose-built for this figure — falling back to sales-report's Net
-  // Sale only if that widget failed. sales-report's netSale remains authoritative for the "Net
-  // Sale" grid tile and for period-over-period growth below (branch-wise-sales has no `previous`).
   const branchWiseTotal = parseNumber(branchWise?.total);
   const netSaleNum = branchWiseTotal > 0 ? branchWiseTotal : metrics.netSale;
   const totalSalesAmount = formatCurrency(netSaleNum);
@@ -225,9 +228,7 @@ export function useWidgetsData({
   const serviceChargesVal = formatCurrency(metrics.serviceCharges);
   const deliveryChargesVal = formatCurrency(metrics.deliveryCharges);
 
-  // Compute Hourly Sales Trend Metrics & BarChart Dataset — each hour maps to an array of amounts
-  // (till/session breakdown), not a single-element array; sum it rather than reading index [0].
-  // Computed before the orders-count fallback below, which needs `trendTotalOrders`.
+  // Sum all till/session values for each hour (e.g., "00:00": [13578.9, 42431.36, 74575.47, ...])
   let trendTotalAmount = 0;
   let trendTotalOrders = 0;
 
@@ -235,13 +236,18 @@ export function useWidgetsData({
 
   if (hourlySales && typeof hourlySales === 'object') {
     Object.entries(hourlySales).forEach(([hourKey, valArray]) => {
-      const amount = Array.isArray(valArray)
+      const rawAmount = Array.isArray(valArray)
         ? valArray.reduce((sum, v) => sum + parseNumber(v), 0)
         : parseNumber(valArray);
+      
+      const amount = Math.round(rawAmount * 100) / 100;
       trendTotalAmount += amount;
+
+      const formattedHourLabel = formatHourLabel(hourKey);
+
       trendBarData.push({
         value: amount,
-        label: hourKey,
+        label: formattedHourLabel,
         frontColor: amount > 0 ? colors.chart.turquoise : undefined,
       });
     });
@@ -260,28 +266,16 @@ export function useWidgetsData({
   const finalTrendTotalOrders = trendTotalOrders;
   const finalTrendAvgOrderAmount = trendTotalOrders > 0
     ? formatCurrency(trendTotalAmount / trendTotalOrders)
-    : 'Rs 0';
+    : 'Rs. 0';
 
-  // Order Insights (POST /widgets/sales-insights) — `total` is [{name,value}], `donut` entries are
-  // lowercase ("dinein"/"takeaway"/"delivery") raw counts with no `percentage` field on the wire.
-  // `orders` is the authoritative order count; if that widget failed, fall back to the hourly-order
-  // widget's sum (it may under-count if the hourly window is narrower, but it's better than 0).
   const insightsOrdersCount = extractInsightsTotal(insights?.total, 'Total Orders');
   const totalOrdersCount = insightsOrdersCount > 0 ? insightsOrdersCount : trendTotalOrders;
   const totalCustomersCount = extractInsightsTotal(insights?.total, 'Total Customers');
-
-  // Every real channel in the donut (not just Takeaway) — the API also sends an empty-name,
-  // all-zero placeholder entry that gets filtered out here.
   const orderChannels = extractOrderChannels(insights?.donut);
 
-  // Calculate Avg Order Value: (net_sale / total_orders)
   const avgOrderValNum = totalOrdersCount > 0 ? netSaleNum / totalOrdersCount : 0;
   const avgOrderValueDisplay = `Rs. ${avgOrderValNum.toFixed(2)}`;
 
-  // Growth calculations vs. the previous period — only computable for fields sales-report
-  // actually returns a `previous` value for (Net Sale, Tax). Orders/Avg Order Value have no
-  // previous-period figure on the wire (sales-insights doesn't return one), so those trend
-  // pills are left blank rather than guessed.
   const computeGrowth = (current: number, previous: number): string => {
     if (!hasPrevious || previous <= 0) return '';
     const growth = Math.round(((current - previous) / previous) * 100);
@@ -290,13 +284,9 @@ export function useWidgetsData({
   const overallGrowth = computeGrowth(metrics.netSale, prevMetrics.netSale);
   const salesTaxGrowth = computeGrowth(metrics.tax, prevMetrics.tax);
 
-  // Payment Breakdown — no `percentage` field on the wire, computed client-side. The API's own
-  // `color` field isn't reliably distinct per method (samples have repeated the same color across
-  // Cash and Card), so always assign by a fixed palette instead of trusting it.
   const totalPaymentAmount = Array.isArray(paymentWise)
     ? paymentWise.reduce((sum, p) => sum + parseNumber(p.value), 0)
     : 0;
-  // PaymentBreakdownCard prepends its own "Rs." — feed it a bare abbreviated number.
   const paymentTotalDisplay = formatAmountAbbreviated(totalPaymentAmount);
 
   const paymentPieData = Array.isArray(paymentWise) && paymentWise.length > 0
@@ -316,8 +306,6 @@ export function useWidgetsData({
       }))
     : [];
 
-  // Party Wise Sales — this endpoint DOES return real `orders`/`percentage` fields; render every
-  // channel it returns (Takeaway, Dine-In, ...) rather than a single hardcoded one.
   const partyChannels = Array.isArray(partyWise)
     ? partyWise.map((p) => ({
         name: p.name,

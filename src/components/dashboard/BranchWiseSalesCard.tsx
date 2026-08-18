@@ -3,8 +3,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import { VectorIcon, IconName } from '../common/VectorIcon';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography, fontWeights } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale } from '../../utils/responsive';
 import { formatCurrency } from '../../utils/formatters';
 
 export interface BranchChannelItem {
@@ -48,7 +50,8 @@ export function BranchWiseSalesCard({
   isLoading = false,
 }: BranchWiseSalesCardProps): React.JSX.Element {
   const { colors, isDarkMode } = useTheme();
-  const styles = useMemo(() => createStyles(colors, isDarkMode), [colors, isDarkMode]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, isDarkMode, metrics), [colors, isDarkMode, metrics]);
 
   const displayTotalSales = typeof totalSales === 'number' || !String(totalSales).startsWith('Rs.') ? formatCurrency(totalSales) : totalSales;
   const displayDiscount = typeof discountAmount === 'number' || !String(discountAmount).startsWith('Rs.') ? formatCurrency(discountAmount) : discountAmount;
@@ -169,156 +172,161 @@ export function BranchWiseSalesCard({
   );
 }
 
-const createStyles = (colors: Colors, isDarkMode: boolean) => StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface.card,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    shadowColor: colors.neutral.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  skeletonSpacing: {
-    marginTop: 10,
-  },
-  cardHeader: {
-    marginBottom: 12,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  branchTitle: {
-    color: colors.text.secondary,
-    fontSize: 14,
-    fontWeight: fontWeights.semiBold,
-  },
-  totalSalesText: {
-    color: isDarkMode ? colors.neutral.white : colors.brand.primary,
-    fontSize: 28,
-    fontWeight: fontWeights.heavy,
-    letterSpacing: -0.5,
-    marginTop: 2,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
-  },
-  metaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: colors.surface.background,
-  },
-  metaText: {
-    color: colors.text.secondary,
-    fontSize: 11.5,
-  },
-  tilesGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
-  },
-  tileCard: {
-    flex: 1,
-    backgroundColor: colors.surface.background,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border.light,
-  },
-  tileIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  bgOrangeTint: {
-    backgroundColor: colors.chart.orangeBg,
-  },
-  bgPurpleTint: {
-    backgroundColor: colors.chart.purpleBg,
-  },
-  bgBlueTint: {
-    backgroundColor: colors.chart.blueBg,
-  },
-  tileValue: {
-    fontSize: 12.5,
-    color: colors.text.primary,
-    fontWeight: fontWeights.bold,
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  tileLabel: {
-    fontSize: 11,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    fontWeight: fontWeights.medium,
-  },
-  orderTypesSection: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border.light,
-    paddingTop: 12,
-    marginTop: 2,
-  },
-  orderTypesHeading: {
-    color: colors.text.muted,
-    fontSize: 10.5,
-    letterSpacing: 0.8,
-    marginBottom: 10,
-    fontWeight: fontWeights.bold,
-  },
-  channelsGrid: {
-    gap: 8,
-  },
-  channelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface.background,
-    padding: 10,
-    borderRadius: 10,
-  },
-  channelIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  channelInfo: {
-    flex: 1,
-  },
-  channelName: {
-    fontSize: 13,
-    fontWeight: fontWeights.semiBold,
-    color: colors.text.primary,
-  },
-  channelOrders: {
-    fontSize: 11,
-    color: colors.text.secondary,
-  },
-  channelAmount: {
-    fontSize: 13,
-    fontWeight: fontWeights.bold,
-    color: colors.text.primary,
-  },
-});
+const createStyles = (colors: Colors, isDarkMode: boolean, metrics: ScreenMetrics) => {
+  const tileIconBoxSize = scale(28, metrics);
+  const channelIconBoxSize = scale(28, metrics);
+
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface.card,
+      borderRadius: moderateScale(20, 0.5, metrics),
+      padding: moderateScale(16, 0.5, metrics),
+      marginBottom: scale(16, metrics),
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    skeletonSpacing: {
+      marginTop: scale(10, metrics),
+    },
+    cardHeader: {
+      marginBottom: scale(12, metrics),
+    },
+    headerTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(8, metrics),
+      marginBottom: scale(4, metrics),
+    },
+    branchTitle: {
+      color: colors.text.secondary,
+      fontSize: moderateScale(14, 0.3, metrics),
+      fontWeight: fontWeights.semiBold,
+    },
+    totalSalesText: {
+      color: isDarkMode ? colors.neutral.white : colors.brand.primary,
+      fontSize: moderateScale(28, 0.3, metrics),
+      fontWeight: fontWeights.heavy,
+      letterSpacing: -0.5,
+      marginTop: scale(2, metrics),
+    },
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(10, metrics),
+      marginBottom: scale(14, metrics),
+    },
+    metaBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(5, metrics),
+      paddingHorizontal: moderateScale(8, 0.5, metrics),
+      paddingVertical: moderateScale(4, 0.5, metrics),
+      borderRadius: moderateScale(6, 0.5, metrics),
+      backgroundColor: colors.surface.background,
+    },
+    metaText: {
+      color: colors.text.secondary,
+      fontSize: moderateScale(11.5, 0.3, metrics),
+    },
+    tilesGrid: {
+      flexDirection: 'row',
+      gap: scale(8, metrics),
+      marginBottom: scale(14, metrics),
+    },
+    tileCard: {
+      flex: 1,
+      backgroundColor: colors.surface.background,
+      borderRadius: moderateScale(12, 0.5, metrics),
+      paddingVertical: moderateScale(10, 0.5, metrics),
+      paddingHorizontal: moderateScale(6, 0.5, metrics),
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border.light,
+    },
+    tileIconBox: {
+      width: tileIconBoxSize,
+      height: tileIconBoxSize,
+      borderRadius: moderateScale(8, 0.5, metrics),
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: scale(6, metrics),
+    },
+    bgOrangeTint: {
+      backgroundColor: colors.chart.orangeBg,
+    },
+    bgPurpleTint: {
+      backgroundColor: colors.chart.purpleBg,
+    },
+    bgBlueTint: {
+      backgroundColor: colors.chart.blueBg,
+    },
+    tileValue: {
+      fontSize: moderateScale(12.5, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.bold,
+      marginBottom: scale(2, metrics),
+      textAlign: 'center',
+    },
+    tileLabel: {
+      fontSize: moderateScale(11, 0.3, metrics),
+      color: colors.text.secondary,
+      textAlign: 'center',
+      fontWeight: fontWeights.medium,
+    },
+    orderTypesSection: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border.light,
+      paddingTop: scale(12, metrics),
+      marginTop: scale(2, metrics),
+    },
+    orderTypesHeading: {
+      color: colors.text.muted,
+      fontSize: moderateScale(10.5, 0.3, metrics),
+      letterSpacing: 0.8,
+      marginBottom: scale(10, metrics),
+      fontWeight: fontWeights.bold,
+    },
+    channelsGrid: {
+      gap: scale(8, metrics),
+    },
+    channelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface.background,
+      padding: moderateScale(10, 0.5, metrics),
+      borderRadius: moderateScale(10, 0.5, metrics),
+    },
+    channelIconBox: {
+      width: channelIconBoxSize,
+      height: channelIconBoxSize,
+      borderRadius: moderateScale(8, 0.5, metrics),
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: scale(10, metrics),
+    },
+    channelInfo: {
+      flex: 1,
+    },
+    channelName: {
+      fontSize: moderateScale(13, 0.3, metrics),
+      fontWeight: fontWeights.semiBold,
+      color: colors.text.primary,
+    },
+    channelOrders: {
+      fontSize: moderateScale(11, 0.3, metrics),
+      color: colors.text.secondary,
+    },
+    channelAmount: {
+      fontSize: moderateScale(13, 0.3, metrics),
+      fontWeight: fontWeights.bold,
+      color: colors.text.primary,
+    },
+  });
+};
 
 export default BranchWiseSalesCard;

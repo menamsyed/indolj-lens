@@ -2,15 +2,11 @@ import apiClient from '../client';
 import { ENDPOINTS } from '../config/routes';
 
 export interface WidgetQueryParams {
-  range?: number; // 12 or 24
+  range?: number; // 12 or 24 (defaults to 12)
   from: string;   // YYYY-MM-DD
   to: string;     // YYYY-MM-DD
   branch_id?: string | number;
 }
-
-// Every /widgets/* response is wrapped as { status, message, details: <payload> } —
-// (sales-report additionally carries a sibling `previous` array). All fetchers below
-// unwrap `.details` before returning; nothing upstream should ever see the envelope.
 
 export interface SalesMetricEntry {
   name: string;
@@ -98,7 +94,7 @@ export interface WidgetDescriptor {
 
 function buildQueryString(params: WidgetQueryParams): string {
   const parts: string[] = [
-    `range=${encodeURIComponent(String(params.range || 12))}`,
+    `range=${encodeURIComponent(String(params.range ?? 12))}`,
     `from=${encodeURIComponent(params.from)}`,
     `to=${encodeURIComponent(params.to)}`,
   ];
@@ -114,7 +110,7 @@ export async function fetchWidgetRegistry(): Promise<WidgetDescriptor[]> {
   return Array.isArray(response.data?.details) ? response.data.details : [];
 }
 
-// 2. Sales Overview (POST /widgets/sales-report) — details & previous are arrays of {name, value}
+// 2. Sales Overview (POST /widgets/sales-report)
 export async function fetchSalesReport(params: WidgetQueryParams): Promise<SalesReportResponse> {
   const q = buildQueryString(params);
   const response = await apiClient.post<{ details?: SalesMetricEntry[]; previous?: SalesMetricEntry[] }>(
@@ -138,7 +134,7 @@ export async function fetchSalesInsights(params: WidgetQueryParams): Promise<Sal
   };
 }
 
-// 4. Payment Wise Sales (POST /widgets/sales-payment-wise) — no `percentage` field on the wire, compute client-side
+// 4. Payment Wise Sales (POST /widgets/sales-payment-wise)
 export async function fetchSalesPaymentWise(params: WidgetQueryParams): Promise<PaymentWiseItem[]> {
   const q = buildQueryString(params);
   const response = await apiClient.post<{ details?: PaymentWiseItem[] }>(`${ENDPOINTS.WIDGETS.PAYMENT_WISE}?${q}`);
@@ -152,10 +148,7 @@ export async function fetchSalesPartyWise(params: WidgetQueryParams): Promise<Pa
   return Array.isArray(response.data?.details) ? response.data.details : [];
 }
 
-// 6. New Order List (POST /widgets/new-order-list) — the live widget registry (`get-api-details`)
-// declares only `branch_id` as a param for this endpoint, and it's verified live: passing `from`/
-// `to` (even an unrelated 2020 date range) returns identical rows. It doesn't filter by date —
-// don't send `range`/`from`/`to`, they're silently ignored.
+// 6. New Order List (POST /widgets/new-order-list)
 export async function fetchNewOrderList(params: WidgetQueryParams): Promise<MatrixTableResponse> {
   const q = params.branch_id !== undefined && params.branch_id !== null && params.branch_id !== 'all'
     ? `branch_id=${encodeURIComponent(String(params.branch_id))}`
@@ -187,7 +180,7 @@ export async function fetchDateBranchSales(params: WidgetQueryParams): Promise<u
   return response.data?.details ?? {};
 }
 
-// 10. Sales Summary (POST /widgets/sales-summary) — the widget registry's designated "chartbar" endpoint
+// 10. Sales Summary (POST /widgets/sales-summary)
 export async function fetchSalesSummary(params: WidgetQueryParams): Promise<SalesSummaryResponse> {
   const q = buildQueryString(params);
   const response = await apiClient.post<{ details?: Partial<SalesSummaryResponse> }>(
@@ -199,16 +192,16 @@ export async function fetchSalesSummary(params: WidgetQueryParams): Promise<Sale
   };
 }
 
-// 11. Hourly Sales (POST /widgets/hourly-sales) — each hour maps to an array of amounts to sum, not index [0]
+// 11. Hourly Sales (POST /widgets/hourly-sales) — request with range=12
 export async function fetchHourlySales(params: WidgetQueryParams): Promise<Record<string, number[]>> {
-  const q = buildQueryString(params);
+  const q = buildQueryString({ ...params, range: params.range ?? 12 });
   const response = await apiClient.post<{ details?: Record<string, number[]> }>(`${ENDPOINTS.WIDGETS.HOURLY_SALES}?${q}`);
   return response.data?.details || {};
 }
 
 // 12. Hourly Order (POST /widgets/hourly-order)
 export async function fetchHourlyOrder(params: WidgetQueryParams): Promise<Record<string, number[]>> {
-  const q = buildQueryString(params);
+  const q = buildQueryString({ ...params, range: params.range ?? 12 });
   const response = await apiClient.post<{ details?: Record<string, number[]> }>(`${ENDPOINTS.WIDGETS.HOURLY_ORDER}?${q}`);
   return response.data?.details || {};
 }

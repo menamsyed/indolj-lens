@@ -2,8 +2,10 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { VectorIcon } from '../common/VectorIcon';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale, verticalScale } from '../../utils/responsive';
 
 export interface DashboardHeaderProps {
   cashierName?: string;
@@ -17,7 +19,8 @@ export function DashboardHeader({
   onLogoutPress,
 }: DashboardHeaderProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
 
   return (
     <View style={styles.container}>
@@ -46,58 +49,63 @@ export function DashboardHeader({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    backgroundColor: colors.brand.primary,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    minHeight: 80,
-    justifyContent: 'center',
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  avatarText: {
-    fontSize: 18,
-    color: colors.text.white,
-  },
-  profileTitles: {
-    justifyContent: 'center',
-  },
-  dashboardSubtitle: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginBottom: 2,
-  },
-  cashierName: {
-    fontSize: 20,
-    color: colors.text.white,
-  },
-  powerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
+  const avatarSize = scale(48, metrics);
+  const powerButtonSize = Math.max(44, scale(44, metrics));
+
+  return StyleSheet.create({
+    container: {
+      backgroundColor: colors.brand.primary,
+      paddingHorizontal: scale(20, metrics),
+      paddingTop: verticalScale(16, metrics),
+      paddingBottom: verticalScale(16, metrics),
+      minHeight: verticalScale(80, metrics),
+      justifyContent: 'center',
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    profileSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    avatarCircle: {
+      width: avatarSize,
+      height: avatarSize,
+      borderRadius: avatarSize / 2,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: scale(12, metrics),
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    avatarText: {
+      fontSize: moderateScale(18, 0.3, metrics),
+      color: colors.text.white,
+    },
+    profileTitles: {
+      justifyContent: 'center',
+    },
+    dashboardSubtitle: {
+      color: 'rgba(255, 255, 255, 0.85)',
+      marginBottom: scale(2, metrics),
+    },
+    cashierName: {
+      fontSize: moderateScale(20, 0.3, metrics),
+      color: colors.text.white,
+    },
+    powerButton: {
+      width: powerButtonSize,
+      height: powerButtonSize,
+      borderRadius: powerButtonSize / 2,
+      backgroundColor: 'rgba(255, 255, 255, 0.18)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
+};
 
 export default DashboardHeader;

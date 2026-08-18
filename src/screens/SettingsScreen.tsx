@@ -13,8 +13,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsive } from '../hooks/useResponsive';
 import { Colors } from '../styles/colors';
 import { typography, fontWeights } from '../styles/typography';
+import {
+  ScreenMetrics,
+  moderateScale,
+  scale,
+  tabletContentCap,
+  verticalScale,
+} from '../utils/responsive';
 
 import { VectorIcon } from '../components/common/VectorIcon';
 import { ToggleSwitch } from '../components/common/ToggleSwitch';
@@ -23,7 +31,8 @@ import { LogoutConfirmModal } from '../components/dashboard/LogoutConfirmModal';
 export function SettingsScreen(): React.JSX.Element {
   const { user, logout } = useAuth();
   const { colors, isDarkMode, toggleDarkMode } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
 
   const handleConfirmLogout = (): void => {
@@ -152,141 +161,149 @@ function TouchableRow({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.brand.primary,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: colors.surface.background,
-  },
-  header: {
-    backgroundColor: colors.brand.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    minHeight: 80,
-  },
-  headerTitle: {
-    color: colors.text.white,
-    fontSize: 22,
-    fontWeight: fontWeights.bold,
-  },
-  headerLogoutBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 110,
-  },
-  profileCard: {
-    backgroundColor: colors.surface.card,
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.brand.tint,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  avatarImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    paddingVertical: 8,
-    gap: 14,
-  },
-  infoIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.brand.tint,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  infoTextGroup: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: 10.5,
-    color: colors.text.muted,
-    fontWeight: fontWeights.bold,
-    letterSpacing: 0.8,
-    marginBottom: 2,
-  },
-  infoValue: {
-    fontSize: 15,
-    color: colors.text.primary,
-    fontWeight: fontWeights.semiBold,
-  },
-  infoDivider: {
-    height: 1,
-    backgroundColor: colors.border.light,
-    width: '100%',
-    marginVertical: 6,
-  },
-  listContainer: {
-    backgroundColor: colors.surface.card,
-    borderRadius: 20,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border.light,
-    marginLeft: 16,
-  },
-  rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  rowIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    backgroundColor: colors.brand.tint,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rowIconBoxDanger: {
-    backgroundColor: colors.status.errorBg,
-  },
-  rowLabel: {
-    fontSize: 15,
-    color: colors.text.primary,
-    fontWeight: fontWeights.medium,
-  },
-  rowLabelDanger: {
-    fontSize: 15,
-    color: colors.status.error,
-    fontWeight: fontWeights.semiBold,
-  },
-});
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
+  const avatarSize = scale(80, metrics);
+  const infoIconBoxSize = scale(36, metrics);
+  const rowIconBoxSize = scale(34, metrics);
+  const headerLogoutBtnSize = Math.max(44, scale(44, metrics));
+
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.brand.primary,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface.background,
+    },
+    header: {
+      backgroundColor: colors.brand.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: scale(20, metrics),
+      paddingTop: verticalScale(16, metrics),
+      paddingBottom: verticalScale(16, metrics),
+      minHeight: verticalScale(80, metrics),
+    },
+    headerTitle: {
+      color: colors.text.white,
+      fontSize: moderateScale(22, 0.3, metrics),
+      fontWeight: fontWeights.bold,
+    },
+    headerLogoutBtn: {
+      width: headerLogoutBtnSize,
+      height: headerLogoutBtnSize,
+      borderRadius: headerLogoutBtnSize / 2,
+      backgroundColor: 'rgba(255, 255, 255, 0.18)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    scrollContent: {
+      padding: scale(16, metrics),
+      paddingBottom: verticalScale(110, metrics),
+      ...tabletContentCap(metrics),
+    },
+    profileCard: {
+      backgroundColor: colors.surface.card,
+      borderRadius: moderateScale(20, 0.5, metrics),
+      padding: moderateScale(20, 0.5, metrics),
+      alignItems: 'center',
+      marginBottom: verticalScale(16, metrics),
+    },
+    avatarCircle: {
+      width: avatarSize,
+      height: avatarSize,
+      borderRadius: avatarSize / 2,
+      backgroundColor: colors.brand.tint,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: verticalScale(20, metrics),
+    },
+    avatarImage: {
+      width: avatarSize,
+      height: avatarSize,
+      borderRadius: avatarSize / 2,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      paddingVertical: verticalScale(8, metrics),
+      gap: scale(14, metrics),
+    },
+    infoIconBox: {
+      width: infoIconBoxSize,
+      height: infoIconBoxSize,
+      borderRadius: moderateScale(10, 0.5, metrics),
+      backgroundColor: colors.brand.tint,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    infoTextGroup: {
+      flex: 1,
+    },
+    infoLabel: {
+      fontSize: moderateScale(10.5, 0.3, metrics),
+      color: colors.text.muted,
+      fontWeight: fontWeights.bold,
+      letterSpacing: 0.8,
+      marginBottom: verticalScale(2, metrics),
+    },
+    infoValue: {
+      fontSize: moderateScale(15, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.semiBold,
+    },
+    infoDivider: {
+      height: 1,
+      backgroundColor: colors.border.light,
+      width: '100%',
+      marginVertical: verticalScale(6, metrics),
+    },
+    listContainer: {
+      backgroundColor: colors.surface.card,
+      borderRadius: moderateScale(20, 0.5, metrics),
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: scale(16, metrics),
+      paddingVertical: verticalScale(16, metrics),
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border.light,
+      marginLeft: scale(16, metrics),
+    },
+    rowLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(12, metrics),
+    },
+    rowIconBox: {
+      width: rowIconBoxSize,
+      height: rowIconBoxSize,
+      borderRadius: moderateScale(9, 0.5, metrics),
+      backgroundColor: colors.brand.tint,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    rowIconBoxDanger: {
+      backgroundColor: colors.status.errorBg,
+    },
+    rowLabel: {
+      fontSize: moderateScale(15, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.medium,
+    },
+    rowLabelDanger: {
+      fontSize: moderateScale(15, 0.3, metrics),
+      color: colors.status.error,
+      fontWeight: fontWeights.semiBold,
+    },
+  });
+};
 
 export default SettingsScreen;

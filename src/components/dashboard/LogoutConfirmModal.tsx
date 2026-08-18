@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { VectorIcon } from '../common/VectorIcon';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale, tabletContentCap, verticalScale } from '../../utils/responsive';
 
 export interface LogoutConfirmModalProps {
   visible: boolean;
@@ -24,7 +26,8 @@ export function LogoutConfirmModal({
   onCancel,
 }: LogoutConfirmModalProps): React.JSX.Element {
   const { colors, isDarkMode } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
 
   return (
     <Modal
@@ -79,77 +82,82 @@ export function LogoutConfirmModal({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  modalCard: {
-    width: '100%',
-    backgroundColor: colors.surface.card,
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: colors.neutral.black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.status.errorBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 20,
-    color: colors.text.primary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  message: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  cancelButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.neutral.gray100,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cancelText: {
-    fontSize: 14,
-    color: colors.text.primary,
-  },
-  logoutButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.brand.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: 14,
-    color: colors.text.white,
-  },
-});
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
+  const iconCircleSize = scale(60, metrics);
+
+  return StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: scale(24, metrics),
+    },
+    modalCard: {
+      width: '100%',
+      backgroundColor: colors.surface.card,
+      borderRadius: moderateScale(24, 0.5, metrics),
+      padding: moderateScale(24, 0.5, metrics),
+      alignItems: 'center',
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.15,
+      shadowRadius: 20,
+      elevation: 8,
+      ...tabletContentCap(metrics),
+    },
+    iconCircle: {
+      width: iconCircleSize,
+      height: iconCircleSize,
+      borderRadius: iconCircleSize / 2,
+      backgroundColor: colors.status.errorBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: scale(16, metrics),
+    },
+    title: {
+      fontSize: moderateScale(20, 0.3, metrics),
+      color: colors.text.primary,
+      marginBottom: scale(8, metrics),
+      textAlign: 'center',
+    },
+    message: {
+      fontSize: moderateScale(14, 0.3, metrics),
+      color: colors.text.secondary,
+      textAlign: 'center',
+      lineHeight: verticalScale(20, metrics),
+      marginBottom: scale(24, metrics),
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      gap: scale(12, metrics),
+      width: '100%',
+    },
+    cancelButton: {
+      flex: 1,
+      height: Math.max(44, verticalScale(48, metrics)),
+      borderRadius: moderateScale(14, 0.5, metrics),
+      backgroundColor: colors.neutral.gray100,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    cancelText: {
+      fontSize: moderateScale(14, 0.3, metrics),
+      color: colors.text.primary,
+    },
+    logoutButton: {
+      flex: 1,
+      height: Math.max(44, verticalScale(48, metrics)),
+      borderRadius: moderateScale(14, 0.5, metrics),
+      backgroundColor: colors.brand.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    logoutText: {
+      fontSize: moderateScale(14, 0.3, metrics),
+      color: colors.text.white,
+    },
+  });
+};
 
 export default LogoutConfirmModal;

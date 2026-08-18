@@ -4,8 +4,10 @@ import { PieChart } from 'react-native-gifted-charts';
 import { VectorIcon, IconName } from '../common/VectorIcon';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography, fontWeights } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale } from '../../utils/responsive';
 
 export interface OrderChannelItem {
   key: string;
@@ -39,7 +41,8 @@ export function OrderInsightsCard({
   isLoading = false,
 }: OrderInsightsCardProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const channelStyleMap = useMemo(() => getChannelStyleMap(colors), [colors]);
   const defaultChannelStyle = { icon: 'grid' as IconName, color: colors.text.muted, bg: colors.neutral.gray100 };
 
@@ -154,149 +157,161 @@ export function OrderInsightsCard({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  cardContainer: {
-    backgroundColor: colors.surface.card,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    shadowColor: colors.neutral.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  cardTitle: {
-    fontSize: 14,
-    color: colors.text.primary,
-  },
-  subtitleText: {
-    fontSize: 11,
-    color: colors.text.muted,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.neutral.gray50,
-    borderRadius: 14,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border.light,
-  },
-  iconSquare: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  bgGreenTint: {
-    backgroundColor: colors.chart.greenBg,
-  },
-  bgBlueTint: {
-    backgroundColor: colors.chart.blueBg,
-  },
-  statValue: {
-    fontSize: 22,
-    color: colors.text.primary,
-    fontWeight: fontWeights.bold,
-    marginBottom: 2,
-  },
-  statLabel: {
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  centerChartWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  centerBadge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerValue: {
-    fontSize: 16,
-    color: colors.text.primary,
-    fontWeight: fontWeights.bold,
-  },
-  centerSub: {
-    fontSize: 10,
-    color: colors.text.muted,
-  },
-  channelProgressSection: {
-    backgroundColor: colors.neutral.gray50,
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    marginBottom: 8,
-  },
-  channelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  channelLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  channelIconBox: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  channelName: {
-    fontSize: 13.5,
-    color: colors.text.primary,
-    fontWeight: fontWeights.semiBold,
-  },
-  channelPercentage: {
-    fontSize: 13,
-    color: colors.brand.primary,
-    fontWeight: fontWeights.bold,
-  },
-  progressTrack: {
-    width: '100%',
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.neutral.gray200,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  emptyText: {
-    fontSize: 12,
-    color: colors.text.muted,
-    textAlign: 'center',
-    paddingVertical: 8,
-  },
-  skeletonIcon: {
-    marginBottom: 6,
-  },
-  skeletonValue: {
-    marginBottom: 4,
-  },
-});
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
+  const iconSquareSize = scale(32, metrics);
+  const channelIconBoxSize = scale(26, metrics);
+
+  return StyleSheet.create({
+    cardContainer: {
+      backgroundColor: colors.surface.card,
+      borderRadius: moderateScale(20, 0.5, metrics),
+      padding: moderateScale(16, 0.5, metrics),
+      marginBottom: scale(16, metrics),
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      marginBottom: scale(14, metrics),
+    },
+    cardTitle: {
+      fontSize: moderateScale(14, 0.3, metrics),
+      color: colors.text.primary,
+    },
+    subtitleText: {
+      fontSize: moderateScale(11, 0.3, metrics),
+      color: colors.text.muted,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: scale(10, metrics),
+      marginBottom: scale(16, metrics),
+    },
+    statCard: {
+      // Explicit flexGrow/flexShrink/flexBasis (not the `flex: 1` shorthand) + minWidth:
+      // 0 — same fix as BranchSummaryCard.tsx's tileCard. "Total Orders" and "Total
+      // Customers" are different lengths, so without this the longer label's content
+      // width becomes a floor that squeezes the other stat card unevenly.
+      flexGrow: 1,
+      flexShrink: 1,
+      flexBasis: 0,
+      minWidth: 0,
+      backgroundColor: colors.neutral.gray50,
+      borderRadius: moderateScale(14, 0.5, metrics),
+      padding: moderateScale(14, 0.5, metrics),
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border.light,
+    },
+    iconSquare: {
+      width: iconSquareSize,
+      height: iconSquareSize,
+      borderRadius: moderateScale(8, 0.5, metrics),
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: scale(6, metrics),
+    },
+    bgGreenTint: {
+      backgroundColor: colors.chart.greenBg,
+    },
+    bgBlueTint: {
+      backgroundColor: colors.chart.blueBg,
+    },
+    statValue: {
+      fontSize: moderateScale(22, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.bold,
+      marginBottom: scale(2, metrics),
+    },
+    statLabel: {
+      color: colors.text.secondary,
+      textAlign: 'center',
+    },
+    centerChartWrapper: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: scale(16, metrics),
+    },
+    centerBadge: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    centerValue: {
+      fontSize: moderateScale(16, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.bold,
+    },
+    centerSub: {
+      fontSize: moderateScale(10, 0.3, metrics),
+      color: colors.text.muted,
+    },
+    channelProgressSection: {
+      backgroundColor: colors.neutral.gray50,
+      borderRadius: moderateScale(14, 0.5, metrics),
+      padding: moderateScale(12, 0.5, metrics),
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      marginBottom: scale(8, metrics),
+    },
+    channelHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: scale(8, metrics),
+    },
+    channelLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    channelIconBox: {
+      width: channelIconBoxSize,
+      height: channelIconBoxSize,
+      borderRadius: moderateScale(6, 0.5, metrics),
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: scale(8, metrics),
+    },
+    channelName: {
+      fontSize: moderateScale(13.5, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.semiBold,
+    },
+    channelPercentage: {
+      fontSize: moderateScale(13, 0.3, metrics),
+      color: colors.brand.primary,
+      fontWeight: fontWeights.bold,
+    },
+    progressTrack: {
+      width: '100%',
+      height: scale(6, metrics),
+      borderRadius: moderateScale(3, 0.5, metrics),
+      backgroundColor: colors.neutral.gray200,
+      overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: '100%',
+      borderRadius: moderateScale(3, 0.5, metrics),
+    },
+    emptyText: {
+      fontSize: moderateScale(12, 0.3, metrics),
+      color: colors.text.muted,
+      textAlign: 'center',
+      paddingVertical: scale(8, metrics),
+    },
+    skeletonIcon: {
+      marginBottom: scale(6, metrics),
+    },
+    skeletonValue: {
+      marginBottom: scale(4, metrics),
+    },
+  });
+};
 
 export default OrderInsightsCard;

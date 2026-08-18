@@ -3,8 +3,10 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { VectorIcon } from '../common/VectorIcon';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography, fontWeights } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale } from '../../utils/responsive';
 
 export interface ItemWiseSalesCardProps {
   onViewDetailsPress?: () => void;
@@ -16,7 +18,8 @@ export function ItemWiseSalesCard({
   isLoading = false,
 }: ItemWiseSalesCardProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const topItems = [
     { name: 'Royal Tikka Medium', qty: '3', sales: 'Rs.3,900', percentage: '11.8%' },
     { name: 'Zinger Burger Special', qty: '8', sales: 'Rs.6,400', percentage: '19.3%' },
@@ -78,12 +81,12 @@ export function ItemWiseSalesCard({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => StyleSheet.create({
   cardContainer: {
     backgroundColor: colors.surface.card,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: moderateScale(20, 0.5, metrics),
+    padding: moderateScale(16, 0.5, metrics),
+    marginBottom: scale(16, metrics),
     borderWidth: 1,
     borderColor: colors.border.light,
     shadowColor: colors.neutral.black,
@@ -96,70 +99,70 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: scale(12, metrics),
   },
   cardTitle: {
-    fontSize: 14,
+    fontSize: moderateScale(14, 0.3, metrics),
     color: colors.text.primary,
   },
   viewDetailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: scale(4, metrics),
   },
   viewDetailsText: {
-    fontSize: 12,
+    fontSize: moderateScale(12, 0.3, metrics),
     color: colors.brand.primary,
     fontWeight: fontWeights.bold,
   },
   itemList: {
-    gap: 8,
+    gap: scale(8, metrics),
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.neutral.gray50,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: moderateScale(12, 0.5, metrics),
+    paddingHorizontal: moderateScale(12, 0.5, metrics),
+    paddingVertical: moderateScale(8, 0.5, metrics),
     borderWidth: 1,
     borderColor: colors.border.light,
   },
   leftCol: {
     flex: 1,
-    marginRight: 8,
+    marginRight: scale(8, metrics),
   },
   itemName: {
-    fontSize: 13,
+    fontSize: moderateScale(13, 0.3, metrics),
     color: colors.text.primary,
     fontWeight: fontWeights.semiBold,
   },
   qtyText: {
     color: colors.text.muted,
-    marginTop: 1,
+    marginTop: scale(1, metrics),
   },
   rightCol: {
     alignItems: 'flex-end',
   },
   salesText: {
-    fontSize: 13.5,
+    fontSize: moderateScale(13.5, 0.3, metrics),
     color: colors.text.primary,
     fontWeight: fontWeights.bold,
   },
   percentageText: {
-    fontSize: 11,
+    fontSize: moderateScale(11, 0.3, metrics),
     color: colors.text.secondary,
-    marginTop: 1,
+    marginTop: scale(1, metrics),
   },
   skeletonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    height: 40,
-    borderRadius: 12,
-    marginBottom: 8,
+    height: scale(40, metrics),
+    borderRadius: moderateScale(12, 0.5, metrics),
+    marginBottom: scale(8, metrics),
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: moderateScale(12, 0.5, metrics),
     backgroundColor: colors.neutral.gray50,
   },
 });

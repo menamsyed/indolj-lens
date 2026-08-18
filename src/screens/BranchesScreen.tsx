@@ -13,8 +13,16 @@ import { useTheme } from '../context/ThemeContext';
 import { useBranches } from '../hooks/useBranches';
 import { useBranchWiseSummaries } from '../hooks/useBranchWiseSummaries';
 import { useDateBranchFilter, buildBranchOptionsList } from '../hooks/useDateBranchFilter';
+import { useResponsive } from '../hooks/useResponsive';
 import { Colors } from '../styles/colors';
 import { typography, fontWeights } from '../styles/typography';
+import {
+  ScreenMetrics,
+  moderateScale,
+  scale,
+  tabletContentCap,
+  verticalScale,
+} from '../utils/responsive';
 
 import { DashboardHeader } from '../components/dashboard/DashboardHeader';
 import { FloatingFilterBar } from '../components/dashboard/FloatingFilterBar';
@@ -26,7 +34,8 @@ import { VectorIcon } from '../components/common/VectorIcon';
 export function BranchesScreen(): React.JSX.Element {
   const { user, logout } = useAuth();
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
 
   const {
@@ -149,54 +158,59 @@ export function BranchesScreen(): React.JSX.Element {
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.brand.primary,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: colors.surface.background,
-  },
-  scrollBody: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 110,
-    flexGrow: 1,
-  },
-  sectionHeaderTitle: {
-    fontSize: 12,
-    color: colors.text.muted,
-    letterSpacing: 0.8,
-    marginBottom: 12,
-    marginTop: 4,
-  },
-  emptyStateContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  emptyStateIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.neutral.gray100,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyStateTitle: {
-    fontSize: 14,
-    color: colors.text.primary,
-    fontWeight: fontWeights.semiBold,
-  },
-  emptyStateText: {
-    fontSize: 13,
-    color: colors.text.muted,
-    textAlign: 'center',
-  },
-});
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
+  const emptyStateIconSize = scale(56, metrics);
+
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.brand.primary,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface.background,
+    },
+    scrollBody: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: scale(16, metrics),
+      paddingBottom: verticalScale(110, metrics),
+      flexGrow: 1,
+      ...tabletContentCap(metrics),
+    },
+    sectionHeaderTitle: {
+      fontSize: moderateScale(12, 0.3, metrics),
+      color: colors.text.muted,
+      letterSpacing: 0.8,
+      marginBottom: verticalScale(12, metrics),
+      marginTop: verticalScale(4, metrics),
+    },
+    emptyStateContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: scale(20, metrics),
+    },
+    emptyStateIconCircle: {
+      width: emptyStateIconSize,
+      height: emptyStateIconSize,
+      borderRadius: emptyStateIconSize / 2,
+      backgroundColor: colors.neutral.gray100,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyStateTitle: {
+      fontSize: moderateScale(14, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.semiBold,
+    },
+    emptyStateText: {
+      fontSize: moderateScale(13, 0.3, metrics),
+      color: colors.text.muted,
+      textAlign: 'center',
+    },
+  });
+};
 
 export default BranchesScreen;

@@ -3,8 +3,10 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { VectorIcon } from '../common/VectorIcon';
 import { FilterFAB } from './FilterFAB';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography, fontWeights } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale, verticalScale } from '../../utils/responsive';
 
 export interface FloatingFilterBarProps {
   isDateDefault: boolean;
@@ -26,7 +28,8 @@ export function FloatingFilterBar({
   onPress,
 }: FloatingFilterBarProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
 
   return (
     <View style={styles.wrapper}>
@@ -58,23 +61,23 @@ export function FloatingFilterBar({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    right: 20,
-    bottom: 96,
+    right: scale(20, metrics),
+    bottom: verticalScale(96, metrics),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: scale(10, metrics),
     zIndex: 10,
   },
   summaryPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: 220,
-    height: 34,
-    borderRadius: 17,
-    paddingHorizontal: 12,
+    maxWidth: scale(220, metrics),
+    height: Math.max(44, verticalScale(34, metrics)),
+    borderRadius: moderateScale(17, 0.5, metrics),
+    paddingHorizontal: scale(12, metrics),
     backgroundColor: colors.surface.card,
     borderWidth: 1,
     borderColor: colors.border.light,
@@ -87,20 +90,20 @@ const createStyles = (colors: Colors) => StyleSheet.create({
   summaryItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: scale(5, metrics),
     flexShrink: 1,
   },
   summaryDivider: {
     width: 1,
-    height: 14,
+    height: scale(14, metrics),
     backgroundColor: colors.border.light,
-    marginHorizontal: 8,
+    marginHorizontal: scale(8, metrics),
   },
   summaryText: {
-    fontSize: 12,
+    fontSize: moderateScale(12, 0.3, metrics),
     color: colors.text.primary,
     fontWeight: fontWeights.semiBold,
-    maxWidth: 90,
+    maxWidth: scale(90, metrics),
   },
 });
 

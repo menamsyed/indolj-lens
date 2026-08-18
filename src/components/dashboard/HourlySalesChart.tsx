@@ -4,8 +4,10 @@ import { BarChart } from 'react-native-gifted-charts';
 import { VectorIcon } from '../common/VectorIcon';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography, fontWeights } from '../../styles/typography';
+import { ScreenMetrics, moderateScale, scale, verticalScale } from '../../utils/responsive';
 
 export interface HourlySalesChartProps {
   onViewDetailsPress?: () => void;
@@ -17,7 +19,8 @@ export function HourlySalesChart({
   isLoading = false,
 }: HourlySalesChartProps): React.JSX.Element {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const metrics = useResponsive();
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
 
   const renderTopLabel = useCallback(
     (text: string) => () => (
@@ -106,12 +109,12 @@ export function HourlySalesChart({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => StyleSheet.create({
   chartCard: {
     backgroundColor: colors.surface.card,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: moderateScale(20, 0.5, metrics),
+    padding: moderateScale(16, 0.5, metrics),
+    marginBottom: scale(16, metrics),
     borderWidth: 1,
     borderColor: colors.border.light,
     shadowColor: colors.neutral.black,
@@ -124,51 +127,51 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: scale(12, metrics),
   },
   chartHeaderTitle: {
-    fontSize: 14,
+    fontSize: moderateScale(14, 0.3, metrics),
     color: colors.text.primary,
   },
   viewDetailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: scale(4, metrics),
   },
   viewDetailsText: {
-    fontSize: 12,
+    fontSize: moderateScale(12, 0.3, metrics),
     color: colors.brand.primary,
     fontWeight: fontWeights.bold,
   },
   chartBody: {
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: verticalScale(8, metrics),
   },
   yAxisText: {
-    fontSize: 9.5,
+    fontSize: moderateScale(9.5, 0.3, metrics),
     color: colors.text.muted,
   },
   xAxisText: {
-    fontSize: 10,
+    fontSize: moderateScale(10, 0.3, metrics),
     color: colors.text.secondary,
     fontWeight: fontWeights.semiBold,
   },
   barTopValue: {
-    fontSize: 9.5,
+    fontSize: moderateScale(9.5, 0.3, metrics),
     color: colors.brand.primary,
     fontWeight: fontWeights.bold,
-    marginBottom: 2,
+    marginBottom: scale(2, metrics),
   },
   chartSkeletonBody: {
-    height: 140,
+    height: verticalScale(140, metrics),
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingTop: 16,
+    paddingTop: verticalScale(16, metrics),
   },
   barsRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 24,
+    gap: scale(24, metrics),
   },
 });
 

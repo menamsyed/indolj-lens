@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,11 +6,8 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { VectorIcon, IconName } from '../components/common/VectorIcon';
 import { typography, fontWeights } from '../styles/typography';
 import { useTheme } from '../context/ThemeContext';
-
-const BAR_HEIGHT = 64;
-const FAB_SIZE = 52;
-const NOTCH_WIDTH = 84;
-const NOTCH_DEPTH = 25;
+import { useResponsive } from '../hooks/useResponsive';
+import { ScreenMetrics, moderateScale, scale, verticalScale } from '../utils/responsive';
 
 const TAB_ICON: Record<string, IconName> = {
   Branches: 'store',
@@ -23,27 +20,35 @@ const TAB_ICON: Record<string, IconName> = {
 };
 
 /**
- * Builds the SVG path with a smooth concave cutout notch centered at `cx`.
+ * Builds the SVG path with a smooth concave cutout notch centered at `cx`. `notchWidth`/
+ * `notchDepth` are passed in (rather than closed over as module constants) because they're
+ * now device-scaled values computed inside `CustomTabBar` via `useResponsive()`.
  */
-function buildNotchPath(cx: number, width: number, height: number): string {
-  const halfNotch = NOTCH_WIDTH / 2;
+function buildNotchPath(
+  cx: number,
+  width: number,
+  height: number,
+  notchWidth: number,
+  notchDepth: number
+): string {
+  const halfNotch = notchWidth / 2;
   const x0 = Math.max(cx - halfNotch, 0);
   const x1 = Math.min(cx + halfNotch, width);
 
-  const cp1X = x0 + NOTCH_WIDTH * 0.2;
+  const cp1X = x0 + notchWidth * 0.2;
   const cp1Y = 0;
-  const cp2X = cx - NOTCH_WIDTH * 0.2;
-  const cp2Y = NOTCH_DEPTH;
+  const cp2X = cx - notchWidth * 0.2;
+  const cp2Y = notchDepth;
 
-  const cp3X = cx + NOTCH_WIDTH * 0.2;
-  const cp3Y = NOTCH_DEPTH;
-  const cp4X = x1 - NOTCH_WIDTH * 0.2;
+  const cp3X = cx + notchWidth * 0.2;
+  const cp3Y = notchDepth;
+  const cp4X = x1 - notchWidth * 0.2;
   const cp4Y = 0;
 
   return [
     `M 0 0`,
     `L ${x0} 0`,
-    `C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${cx} ${NOTCH_DEPTH}`,
+    `C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${cx} ${notchDepth}`,
     `C ${cp3X} ${cp3Y}, ${cp4X} ${cp4Y}, ${x1} 0`,
     `L ${width} 0`,
     `L ${width} ${height}`,
@@ -59,6 +64,8 @@ interface TabBarNotchBackgroundProps {
   barWidth: number;
   totalHeight: number;
   backgroundColor: string;
+  notchWidth: number;
+  notchDepth: number;
 }
 
 const TabBarNotchBackground = React.memo(function TabBarNotchBackgroundInner({
@@ -68,13 +75,15 @@ const TabBarNotchBackground = React.memo(function TabBarNotchBackgroundInner({
   barWidth,
   totalHeight,
   backgroundColor,
+  notchWidth,
+  notchDepth,
 }: TabBarNotchBackgroundProps): React.JSX.Element | null {
   const computePath = useCallback(
     (indexValue: number) => {
       const cx = indexValue * tabWidth + tabWidth / 2;
-      return buildNotchPath(cx, barWidth, totalHeight);
+      return buildNotchPath(cx, barWidth, totalHeight, notchWidth, notchDepth);
     },
-    [tabWidth, barWidth, totalHeight],
+    [tabWidth, barWidth, totalHeight, notchWidth, notchDepth],
   );
 
   const [notchPath, setNotchPath] = useState<string>(() => computePath(activeIndex));
@@ -103,10 +112,23 @@ const TabBarNotchBackground = React.memo(function TabBarNotchBackgroundInner({
   );
 });
 
-export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps): React.JSX.Element {
+export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps): React.JSX.Element | null {
   const insets = useSafeAreaInsets();
   const { colors, isDarkMode } = useTheme();
+  const metrics = useResponsive();
   const [barWidth, setBarWidth] = useState<number>(Dimensions.get('window').width);
+
+  // Scaled once per render from the live metrics — feeds both the StyleSheet values
+  // below AND the SVG notch-path math, so the two can never drift out of sync.
+  const BAR_HEIGHT = verticalScale(64, metrics);
+  const FAB_SIZE = scale(52, metrics);
+  const NOTCH_WIDTH = scale(84, metrics);
+  const NOTCH_DEPTH = verticalScale(25, metrics);
+
+  const styles = useMemo(
+    () => createStyles(metrics, BAR_HEIGHT, FAB_SIZE),
+    [metrics, BAR_HEIGHT, FAB_SIZE],
+  );
 
   // In dark mode, active tab icon is crisp white (#FFFFFF) inside the floating FAB bubble
   const containerBgColor = colors.brand.primary;
@@ -142,6 +164,18 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
     }
   };
 
+  // Fully custom tab bar, so the stock `tabBarStyle: { display: 'none' }` handling
+  // doesn't apply automatically — the focused screen (e.g. DashboardScreen while a
+  // detail sub-view is open) sets this option via `navigation.setOptions`, and we have
+  // to actually read and honor it ourselves. Checked after every hook above per the
+  // Rules of Hooks (an early return can't come before any of them).
+  const focusedOptions = descriptors[state.routes[state.index].key]?.options;
+  const isTabBarHidden = (focusedOptions?.tabBarStyle as { display?: string } | undefined)?.display === 'none';
+
+  if (isTabBarHidden) {
+    return null;
+  }
+
   return (
     <View style={styles.outerContainer}>
       <View
@@ -158,6 +192,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           barWidth={barWidth}
           totalHeight={totalHeight}
           backgroundColor={containerBgColor}
+          notchWidth={NOTCH_WIDTH}
+          notchDepth={NOTCH_DEPTH}
         />
 
         {/* Elevated Active Icon View (FAB) centered inside the notch cutout */}
@@ -236,68 +272,69 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   );
 }
 
-const styles = StyleSheet.create({
-  outerContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 10,
-    backgroundColor: 'transparent',
-  },
-  wrapper: {
-    height: BAR_HEIGHT,
-    justifyContent: 'flex-end',
-    position: 'relative',
-    backgroundColor: 'transparent',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  itemsRow: {
-    flexDirection: 'row',
-    height: BAR_HEIGHT,
-    alignItems: 'center',
-  },
-  item: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100%',
-    paddingTop: 6,
-  },
-  iconContainer: {
-    marginBottom: 4,
-  },
-  iconHidden: {
-    opacity: 0,
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: fontWeights.semiBold,
-  },
-  fabBubble: {
-    position: 'absolute',
-    top: -34,
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    zIndex: 20,
-  },
-  fabInner: {
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-});
+const createStyles = (metrics: ScreenMetrics, barHeight: number, fabSize: number) =>
+  StyleSheet.create({
+    outerContainer: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 10,
+      backgroundColor: 'transparent',
+    },
+    wrapper: {
+      height: barHeight,
+      justifyContent: 'flex-end',
+      position: 'relative',
+      backgroundColor: 'transparent',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+      elevation: 8,
+    },
+    itemsRow: {
+      flexDirection: 'row',
+      height: barHeight,
+      alignItems: 'center',
+    },
+    item: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100%',
+      paddingTop: verticalScale(6, metrics),
+    },
+    iconContainer: {
+      marginBottom: verticalScale(4, metrics),
+    },
+    iconHidden: {
+      opacity: 0,
+      marginBottom: verticalScale(4, metrics),
+    },
+    label: {
+      fontSize: moderateScale(11, 0.3, metrics),
+      fontWeight: fontWeights.semiBold,
+    },
+    fabBubble: {
+      position: 'absolute',
+      top: -verticalScale(34, metrics),
+      width: fabSize,
+      height: fabSize,
+      borderRadius: fabSize / 2,
+      zIndex: 20,
+    },
+    fabInner: {
+      width: fabSize,
+      height: fabSize,
+      borderRadius: fabSize / 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      elevation: 8,
+    },
+  });
 
 export default CustomTabBar;
