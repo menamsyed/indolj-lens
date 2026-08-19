@@ -115,7 +115,7 @@ export function LoginForm(): React.JSX.Element {
           label="Biometric login"
           value={rememberMe}
           onValueChange={setRememberMe}
-          disabled={isLoading}
+          loading={isLoading}
         />
       </View>
 
