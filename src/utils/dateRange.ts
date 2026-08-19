@@ -31,21 +31,14 @@ export function formatDateRangeLabel(fromDate: Date, toDate: Date): string {
   return from === to ? from : `${from} - ${to}`;
 }
 
-// Safe Date computation matching exact POS Business Day contract
+// Local-calendar-date computation; all Date objects pinned to local noon to avoid DST/midnight edge cases
 export function computeRawDateRangeForPreset(
   preset: string,
   customFromDate?: Date,
   customToDate?: Date
 ): RawDateRange {
   const now = new Date();
-  
-  // Align to POS store business date (Aug 17 2026 when system clock is Aug 18 2026)
-  let baseDate: Date;
-  if (now.getFullYear() === 2026 && now.getMonth() === 7 && now.getDate() === 18) {
-    baseDate = new Date(2026, 7, 17, 12, 0, 0);
-  } else {
-    baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
-  }
+  const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
 
   const year = baseDate.getFullYear();
   const month = baseDate.getMonth();
@@ -55,21 +48,18 @@ export function computeRawDateRangeForPreset(
   let toDate = new Date(year, month, date, 12, 0, 0);
 
   if (preset === 'Today') {
-    // Today: 2026-08-17 to 2026-08-17
     fromDate = new Date(year, month, date, 12, 0, 0);
     toDate = new Date(year, month, date, 12, 0, 0);
   } else if (preset === 'Yesterday') {
-    // Yesterday: 2026-08-16 to 2026-08-16
     fromDate = new Date(year, month, date - 1, 12, 0, 0);
     toDate = new Date(year, month, date - 1, 12, 0, 0);
   } else if (preset === 'This Week') {
-    // This Week: 2026-08-10 (Mon) to 2026-08-16 (Sun)
+    // Week-to-date: Monday of the current week through today (mirrors "This Month" below).
     const dayOfWeek = baseDate.getDay(); // 0 = Sun, 1 = Mon...
-    const distToPrevMonday = dayOfWeek === 0 ? 6 : dayOfWeek + 6;
-    const distToPrevSunday = dayOfWeek === 0 ? 0 : dayOfWeek;
-    
-    fromDate = new Date(year, month, date - distToPrevMonday, 12, 0, 0);
-    toDate = new Date(year, month, date - distToPrevSunday, 12, 0, 0);
+    const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    fromDate = new Date(year, month, date - daysSinceMonday, 12, 0, 0);
+    toDate = new Date(year, month, date, 12, 0, 0);
   } else if (preset === 'This Month') {
     fromDate = new Date(year, month, 1, 12, 0, 0);
     toDate = new Date(year, month, date, 12, 0, 0);
@@ -95,8 +85,32 @@ export function computeDateRangeForPreset(
   };
 }
 
+// The immediately preceding period of the same length as the selected preset — e.g. "Today"
+// (1 day) -> yesterday, "This Week" (Mon-to-date, N days) -> the N days before that. Mirrors
+// how sales-report's own `previous` array behaves (confirmed against live data: for a 1-day
+// "Today" query, its previous is yesterday). Endpoints like sales-insights don't return their
+// own previous comparison, so callers needing period-over-period growth for those fetch this
+// range as a second request.
+export function computePreviousDateRange(
+  preset: string,
+  customFromDate?: Date,
+  customToDate?: Date
+): ComputedDateRange {
+  const { fromDate, toDate } = computeRawDateRangeForPreset(preset, customFromDate, customToDate);
+  const spanDays = Math.round((toDate.getTime() - fromDate.getTime()) / 86400000) + 1;
+
+  const prevFromDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() - spanDays, 12, 0, 0);
+  const prevToDate = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate() - spanDays, 12, 0, 0);
+
+  return {
+    from: formatDateYYYYMMDD(prevFromDate),
+    to: formatDateYYYYMMDD(prevToDate),
+  };
+}
+
 export default {
   computeDateRangeForPreset,
+  computePreviousDateRange,
   computeRawDateRangeForPreset,
   formatDateRangeLabel,
   DATE_RANGE_PRESETS,
