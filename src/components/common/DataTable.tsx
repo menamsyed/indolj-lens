@@ -1,5 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { VectorIcon, IconName } from './VectorIcon';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
@@ -26,7 +27,9 @@ export interface DataTableProps<T> {
   columns: DataTableColumn<T>[];
   data: T[];
   keyExtractor?: (row: T, index: number) => string;
+  emptyIcon?: IconName;
   emptyText?: string;
+  emptySubtext?: string;
   footer?: DataTableFooter;
 }
 
@@ -38,7 +41,9 @@ export function DataTable<T>({
   columns,
   data,
   keyExtractor,
-  emptyText = 'No records found for this period',
+  emptyIcon = 'inbox',
+  emptyText = 'No Data Available',
+  emptySubtext = 'There are no records to show for the selected period.',
   footer,
 }: DataTableProps<T>): React.JSX.Element {
   const { colors } = useTheme();
@@ -66,33 +71,26 @@ export function DataTable<T>({
     </Text>
   ));
 
-  const bodyRows =
-    data.length === 0 ? (
-      <View style={styles.emptyRow}>
-        <Text style={[typography.bodyMedium, styles.emptyText]}>{emptyText}</Text>
-      </View>
-    ) : (
-      data.map((row, rowIndex) => (
-        <View
-          key={keyExtractor ? keyExtractor(row, rowIndex) : `row-${rowIndex}`}
-          style={[styles.tableRow, rowIndex % 2 === 1 && styles.tableRowAlt]}
+  const bodyRows = data.map((row, rowIndex) => (
+    <View
+      key={keyExtractor ? keyExtractor(row, rowIndex) : `row-${rowIndex}`}
+      style={[styles.tableRow, rowIndex % 2 === 1 && styles.tableRowAlt]}
+    >
+      {columns.map((column, columnIndex) => (
+        <Text
+          key={column.key}
+          style={[
+            typography.bodyMedium,
+            columnIndex === 0 ? styles.cellTextBold : styles.cellText,
+            columnSizeStyle(column),
+            columnAlignStyle(column),
+          ]}
         >
-          {columns.map((column, columnIndex) => (
-            <Text
-              key={column.key}
-              style={[
-                typography.bodyMedium,
-                columnIndex === 0 ? styles.cellTextBold : styles.cellText,
-                columnSizeStyle(column),
-                columnAlignStyle(column),
-              ]}
-            >
-              {column.renderCell(row, rowIndex)}
-            </Text>
-          ))}
-        </View>
-      ))
-    );
+          {column.renderCell(row, rowIndex)}
+        </Text>
+      ))}
+    </View>
+  ));
 
   return (
     <View style={styles.tableShadowWrapper}>
@@ -114,34 +112,50 @@ export function DataTable<T>({
         <View style={styles.tableHeaderRow}>{headerCells}</View>
       )}
 
-      <ScrollView style={styles.tableVerticalScroll}>
-        {isFixedWidth ? (
-          <Animated.ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={data.length > 0}
-            // The header mirrors this offset with a raw translateX and no clamping, so letting
-            // the ScrollView bounce/overscroll past its real bounds (the default on both
-            // platforms) pushes contentOffset.x past what the header's content can cover,
-            // desyncing the two right when there's actually enough width to overscroll from —
-            // exactly the wide, many-column tables (e.g. Branch Wise Sales' 6 columns) this
-            // horizontal-scroll path exists for.
-            bounces={false}
-            overScrollMode="never"
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-              { useNativeDriver: true }
-            )}
-            scrollEventThrottle={16}
-          >
-            <View>{bodyRows}</View>
-          </Animated.ScrollView>
-        ) : (
-          bodyRows
-        )}
-      </ScrollView>
+      {/* Rendered as a flex:1 sibling instead of nested inside the ScrollView's (top-aligned)
+          content flow — there's nothing to scroll when empty, and nesting it left the icon/
+          message pinned near the top of the table's body instead of centered within it. */}
+      {data.length === 0 ? (
+        <View style={styles.emptyRow}>
+          <View style={styles.emptyIconCircle}>
+            <VectorIcon name={emptyIcon} size={26} color={colors.text.muted} strokeWidth={1.5} />
+          </View>
+          <Text style={[typography.bodyMedium, styles.emptyTitle]}>{emptyText}</Text>
+          {Boolean(emptySubtext) && (
+            <Text style={[typography.caption, styles.emptySubtext]}>{emptySubtext}</Text>
+          )}
+        </View>
+      ) : (
+        <ScrollView style={styles.tableVerticalScroll}>
+          {isFixedWidth ? (
+            <Animated.ScrollView
+              horizontal
+              showsHorizontalScrollIndicator
+              // The header mirrors this offset with a raw translateX and no clamping, so letting
+              // the ScrollView bounce/overscroll past its real bounds (the default on both
+              // platforms) pushes contentOffset.x past what the header's content can cover,
+              // desyncing the two right when there's actually enough width to overscroll from —
+              // exactly the wide, many-column tables (e.g. Branch Wise Sales' 6 columns) this
+              // horizontal-scroll path exists for.
+              bounces={false}
+              overScrollMode="never"
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                { useNativeDriver: true }
+              )}
+              scrollEventThrottle={16}
+            >
+              <View>{bodyRows}</View>
+            </Animated.ScrollView>
+          ) : (
+            bodyRows
+          )}
+        </ScrollView>
+      )}
 
-      {/* Pinned outside the scroll, always visible */}
-      {footer && (
+      {/* Pinned outside the scroll, always visible — hidden entirely when there's no data,
+          since a "TOTAL" of zero rows isn't a meaningful figure to show. */}
+      {footer && data.length > 0 && (
         <View style={styles.totalFooterRow}>
           <Text style={[typography.bodyMedium, styles.totalLabelText]}>{footer.label}</Text>
           {footer.value !== undefined && (
@@ -223,11 +237,28 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) =>
       color: colors.text.primary,
     },
     emptyRow: {
+      flex: 1,
       padding: moderateScale(24, 0.5, metrics),
       alignItems: 'center',
+      justifyContent: 'center',
     },
-    emptyText: {
+    emptyIconCircle: {
+      width: scale(56, metrics),
+      height: scale(56, metrics),
+      borderRadius: scale(28, metrics),
+      backgroundColor: colors.neutral.gray100,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: scale(12, metrics),
+    },
+    emptyTitle: {
+      fontWeight: fontWeights.semiBold,
+      color: colors.text.primary,
+      marginBottom: scale(4, metrics),
+    },
+    emptySubtext: {
       color: colors.text.muted,
+      textAlign: 'center',
     },
     totalFooterRow: {
       flexDirection: 'row',
