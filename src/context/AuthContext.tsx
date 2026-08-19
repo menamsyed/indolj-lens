@@ -77,12 +77,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       } catch (err) {
         console.warn('Failed to hydrate auth session from storage:', err);
-      } finally {
-        setIsHydrating(false);
       }
     };
 
-    hydrateSession();
+    // AsyncStorage reads resolve in single-digit milliseconds, which made the splash
+    // unmount before its own fade/scale-in animation could play. Holding it for a minimum
+    // duration lets the splash actually display; if hydration itself is slower than this,
+    // Promise.all waits for hydration instead, so the splash never disappears too early.
+    const MIN_SPLASH_DURATION_MS = 1200;
+    const minSplashDelay = new Promise<void>((resolve) => setTimeout(resolve, MIN_SPLASH_DURATION_MS));
+
+    Promise.all([hydrateSession(), minSplashDelay]).then(() => {
+      setIsHydrating(false);
+    });
   }, []);
 
   // Directly store the 4-tuple login response in state & storage
