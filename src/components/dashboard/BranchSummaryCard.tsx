@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { VectorIcon } from '../common/VectorIcon';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
@@ -18,6 +19,7 @@ export interface BranchSummaryCardProps {
   avgOrderValue?: string | number;
   avgOrderValueGrowth?: string;
   discountAmount?: string | number;
+  discountGrowth?: string;
   salesTaxAmount?: string | number;
   salesTaxGrowth?: string;
   overallGrowth?: string;
@@ -33,23 +35,26 @@ export function BranchSummaryCard({
   avgOrderValue = 'Rs. 0',
   avgOrderValueGrowth = '',
   discountAmount = 'Rs. 0',
+  discountGrowth = '',
   salesTaxAmount = 'Rs. 0',
   salesTaxGrowth = '',
   overallGrowth = '',
   isLoading = false,
 }: BranchSummaryCardProps): React.JSX.Element {
-  const { colors, isDarkMode } = useTheme();
+  const { colors } = useTheme();
   const metrics = useResponsive();
-  const styles = useMemo(() => createStyles(colors, isDarkMode, metrics), [colors, isDarkMode, metrics]);
+  const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
 
   const displayNetSales = formatCurrency(netSalesAmount);
   const displayAvgOrder = formatCurrency(avgOrderValue);
   const displayDiscount = formatCurrency(discountAmount);
   const displaySalesTax = formatCurrency(salesTaxAmount);
 
+  const gradientColors: [string, string] = [colors.brand.pressed, colors.brand.primary];
+
   if (isLoading) {
     return (
-      <View style={styles.cardContainer}>
+      <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardContainer}>
         <SkeletonLoader width={100} height={12} borderRadius={3} style={styles.skeletonItem} />
         <SkeletonLoader width={160} height={14} borderRadius={4} style={styles.skeletonItem} />
         <SkeletonLoader width={120} height={28} borderRadius={6} style={styles.skeletonItem} />
@@ -73,17 +78,18 @@ export function BranchSummaryCard({
             ))}
           </View>
         </View>
-      </View>
+      </LinearGradient>
     );
   }
 
   const isOverallNegative = overallGrowth.startsWith('-');
   const isOrdersNegative = ordersGrowth.startsWith('-');
   const isAvgNegative = avgOrderValueGrowth.startsWith('-');
+  const isDiscountNegative = discountGrowth.startsWith('-');
   const isTaxNegative = salesTaxGrowth.startsWith('-');
 
   return (
-    <View style={styles.cardContainer}>
+    <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardContainer}>
       {/* Header Banner Row with Top Right Percentage Chip */}
       <View style={styles.bannerHeaderRow}>
         <View>
@@ -95,8 +101,14 @@ export function BranchSummaryCard({
 
         {overallGrowth ? (
           <View style={[styles.topGrowthChip, isOverallNegative && styles.topGrowthChipNeg]}>
+            <VectorIcon
+              name={isOverallNegative ? 'trending-down' : 'trending-up'}
+              size={moderateScale(11, 0.3, metrics)}
+              color={isOverallNegative ? colors.chart.red : colors.status.success}
+              strokeWidth={2.5}
+            />
             <Text style={[styles.growthText, isOverallNegative && styles.growthTextNeg]}>
-              {isOverallNegative ? '↓ ' : '▲ '}{overallGrowth}
+              {overallGrowth}
             </Text>
           </View>
         ) : null}
@@ -122,8 +134,14 @@ export function BranchSummaryCard({
 
             {ordersGrowth ? (
               <View style={[styles.tileGrowthChip, isOrdersNegative && styles.tileGrowthChipNeg]}>
+                <VectorIcon
+                  name={isOrdersNegative ? 'trending-down' : 'trending-up'}
+                  size={moderateScale(10, 0.3, metrics)}
+                  color={isOrdersNegative ? colors.chart.red : colors.status.success}
+                  strokeWidth={2.5}
+                />
                 <Text style={[styles.tileGrowthText, isOrdersNegative && styles.tileGrowthTextNeg]}>
-                  {isOrdersNegative ? '↓ ' : '▲ '}{ordersGrowth}
+                  {ordersGrowth}
                 </Text>
               </View>
             ) : null}
@@ -139,8 +157,14 @@ export function BranchSummaryCard({
 
             {avgOrderValueGrowth ? (
               <View style={[styles.tileGrowthChip, isAvgNegative && styles.tileGrowthChipNeg]}>
+                <VectorIcon
+                  name={isAvgNegative ? 'trending-down' : 'trending-up'}
+                  size={moderateScale(10, 0.3, metrics)}
+                  color={isAvgNegative ? colors.chart.red : colors.status.success}
+                  strokeWidth={2.5}
+                />
                 <Text style={[styles.tileGrowthText, isAvgNegative && styles.tileGrowthTextNeg]}>
-                  {isAvgNegative ? '↓ ' : '▲ '}{avgOrderValueGrowth}
+                  {avgOrderValueGrowth}
                 </Text>
               </View>
             ) : null}
@@ -155,6 +179,20 @@ export function BranchSummaryCard({
             </View>
             <Text style={[typography.caption, styles.tileLabel]}>Discount Amount</Text>
             <Text style={[typography.h3, styles.tileValue]}>{displayDiscount}</Text>
+
+            {discountGrowth ? (
+              <View style={[styles.tileGrowthChip, isDiscountNegative && styles.tileGrowthChipNeg]}>
+                <VectorIcon
+                  name={isDiscountNegative ? 'trending-down' : 'trending-up'}
+                  size={moderateScale(10, 0.3, metrics)}
+                  color={isDiscountNegative ? colors.chart.red : colors.status.success}
+                  strokeWidth={2.5}
+                />
+                <Text style={[styles.tileGrowthText, isDiscountNegative && styles.tileGrowthTextNeg]}>
+                  {discountGrowth}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Tile 4: Sales Tax Amount (File Text Icon - Purple Theme) */}
@@ -167,34 +205,37 @@ export function BranchSummaryCard({
 
             {salesTaxGrowth ? (
               <View style={[styles.tileGrowthChip, isTaxNegative && styles.tileGrowthChipNeg]}>
+                <VectorIcon
+                  name={isTaxNegative ? 'trending-down' : 'trending-up'}
+                  size={moderateScale(10, 0.3, metrics)}
+                  color={isTaxNegative ? colors.chart.red : colors.status.success}
+                  strokeWidth={2.5}
+                />
                 <Text style={[styles.tileGrowthText, isTaxNegative && styles.tileGrowthTextNeg]}>
-                  {isTaxNegative ? '↓ ' : '▲ '}{salesTaxGrowth}
+                  {salesTaxGrowth}
                 </Text>
               </View>
             ) : null}
           </View>
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
-const createStyles = (colors: Colors, isDarkMode: boolean, metrics: ScreenMetrics) => {
+const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
   const iconBoxSize = scale(40, metrics);
 
   return StyleSheet.create({
     cardContainer: {
-      backgroundColor: colors.surface.card,
       borderRadius: moderateScale(20, 0.5, metrics),
       padding: moderateScale(18, 0.5, metrics),
       marginBottom: scale(16, metrics),
-      borderWidth: 1,
-      borderColor: colors.border.light,
       shadowColor: colors.neutral.black,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.05,
-      shadowRadius: 10,
-      elevation: 3,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.12,
+      shadowRadius: 16,
+      elevation: 6,
     },
     bannerHeaderRow: {
       flexDirection: 'row',
@@ -203,16 +244,19 @@ const createStyles = (colors: Colors, isDarkMode: boolean, metrics: ScreenMetric
     },
     bannerTitle: {
       fontSize: moderateScale(11, 0.3, metrics),
-      color: colors.text.muted,
+      color: 'rgba(255, 255, 255, 0.75)',
       letterSpacing: 0.8,
       marginBottom: scale(2, metrics),
     },
     dateSubtitle: {
       fontSize: moderateScale(13, 0.3, metrics),
-      color: colors.text.secondary,
+      color: 'rgba(255, 255, 255, 0.85)',
       marginBottom: scale(6, metrics),
     },
     topGrowthChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(3, 0.5, metrics),
       backgroundColor: colors.status.successBg,
       paddingHorizontal: moderateScale(8, 0.5, metrics),
       paddingVertical: moderateScale(3, 0.5, metrics),
@@ -230,17 +274,17 @@ const createStyles = (colors: Colors, isDarkMode: boolean, metrics: ScreenMetric
       fontWeight: fontWeights.bold,
     },
     growthTextNeg: {
-      color: colors.status.error,
+      color: colors.chart.red,
     },
     bigSalesValue: {
       fontSize: moderateScale(32, 0.3, metrics),
-      color: isDarkMode ? colors.text.white : colors.brand.primary,
+      color: colors.text.white,
       fontWeight: fontWeights.bold,
       marginBottom: scale(2, metrics),
     },
     prevPeriodSubtitle: {
       fontSize: moderateScale(12, 0.3, metrics),
-      color: colors.text.muted,
+      color: 'rgba(255, 255, 255, 0.65)',
       marginBottom: scale(16, metrics),
     },
     tilesGrid: {
@@ -262,11 +306,9 @@ const createStyles = (colors: Colors, isDarkMode: boolean, metrics: ScreenMetric
       flexShrink: 1,
       flexBasis: 0,
       minWidth: 0,
-      backgroundColor: colors.neutral.gray50,
+      backgroundColor: 'rgba(255, 255, 255, 0.14)',
       borderRadius: moderateScale(14, 0.5, metrics),
       padding: moderateScale(12, 0.5, metrics),
-      borderWidth: 1,
-      borderColor: colors.border.light,
     },
     iconBox: {
       width: iconBoxSize,
@@ -289,17 +331,20 @@ const createStyles = (colors: Colors, isDarkMode: boolean, metrics: ScreenMetric
       backgroundColor: colors.chart.purpleBg,
     },
     tileLabel: {
-      color: colors.text.muted,
+      color: 'rgba(255, 255, 255, 0.75)',
       marginBottom: scale(2, metrics),
       fontSize: moderateScale(11, 0.3, metrics),
     },
     tileValue: {
       fontSize: moderateScale(16, 0.3, metrics),
-      color: colors.text.primary,
+      color: colors.text.white,
       fontWeight: fontWeights.bold,
       marginBottom: scale(6, metrics),
     },
     tileGrowthChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(3, 0.5, metrics),
       alignSelf: 'flex-start',
       backgroundColor: colors.status.successBg,
       paddingHorizontal: moderateScale(6, 0.5, metrics),
@@ -315,7 +360,7 @@ const createStyles = (colors: Colors, isDarkMode: boolean, metrics: ScreenMetric
       fontWeight: fontWeights.bold,
     },
     tileGrowthTextNeg: {
-      color: colors.status.error,
+      color: colors.chart.red,
     },
     skeletonItem: {
       marginBottom: scale(8, metrics),
