@@ -20,7 +20,7 @@ import {
   MatrixTableResponse,
 } from '../api/services/widgetService';
 import { parseNumber, formatCurrency, formatAmountAbbreviated } from '../utils/formatters';
-import { computeDateRangeForPreset } from '../utils/dateRange';
+import { computeDateRangeForPreset, computePreviousDateRange } from '../utils/dateRange';
 import { safeAllSettled } from '../utils/asyncSafe';
 import {
   extractSalesMetrics,
@@ -61,6 +61,7 @@ export function useWidgetsData({
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [salesReport, setSalesReport] = useState<SalesReportResponse | null>(null);
   const [insights, setInsights] = useState<SalesInsightsResponse | null>(null);
+  const [prevInsights, setPrevInsights] = useState<SalesInsightsResponse | null>(null);
   const [paymentWise, setPaymentWise] = useState<PaymentWiseItem[]>([]);
   const [partyWise, setPartyWise] = useState<PartyWiseItem[]>([]);
   const [hourlySales, setHourlySales] = useState<Record<string, number[]>>({});
@@ -81,6 +82,15 @@ export function useWidgetsData({
     [dateRangePreset, customFromDate, customToDate]
   );
 
+  // sales-insights (Orders/Customers) doesn't return its own `previous` comparison the way
+  // sales-report does, so period-over-period growth for Orders/Avg Order Value needs a second
+  // fetch against the immediately preceding period of the same length.
+  const getPreviousComputedDates = useCallback(
+    (): { from: string; to: string } =>
+      computePreviousDateRange(dateRangePreset, customFromDate, customToDate),
+    [dateRangePreset, customFromDate, customToDate]
+  );
+
   const loadData = useCallback(
     async (isPullRefresh = false): Promise<void> => {
       if (isPullRefresh) {
@@ -92,6 +102,7 @@ export function useWidgetsData({
 
       const { from, to } = getComputedDates();
       const query = { from, to, branch_id: selectedBranchId };
+      const prevQuery = { ...getPreviousComputedDates(), branch_id: selectedBranchId };
 
       try {
         const [, branchTuple] = await safeAllSettled([
@@ -108,6 +119,7 @@ export function useWidgetsData({
         const [
           reportRes,
           insightsRes,
+          prevInsightsRes,
           paymentsRes,
           partyRes,
           hourlySalesRes,
@@ -119,6 +131,7 @@ export function useWidgetsData({
         ] = await safeAllSettled([
           fetchSalesReport(query),
           fetchSalesInsights(query),
+          fetchSalesInsights(prevQuery),
           fetchSalesPaymentWise(query),
           fetchSalesPartyWise(query),
           fetchHourlySales(query),
@@ -139,6 +152,12 @@ export function useWidgetsData({
           setInsights(insightsRes.value);
         } else {
           setInsights(null);
+        }
+
+        if (prevInsightsRes.status === 'fulfilled' && prevInsightsRes.value) {
+          setPrevInsights(prevInsightsRes.value);
+        } else {
+          setPrevInsights(null);
         }
 
         if (paymentsRes.status === 'fulfilled' && Array.isArray(paymentsRes.value)) {
@@ -196,7 +215,7 @@ export function useWidgetsData({
         setIsRefreshing(false);
       }
     },
-    [getComputedDates, selectedBranchId]
+    [getComputedDates, getPreviousComputedDates, selectedBranchId]
   );
 
   useEffect(() => {
@@ -207,12 +226,15 @@ export function useWidgetsData({
   const prevMetrics = extractSalesMetrics(salesReport?.previous);
   const hasPrevious = Boolean(salesReport?.previous && salesReport.previous.length > 0);
 
-  const branchWiseTotal = parseNumber(branchWise?.total);
-  const netSaleNum = branchWiseTotal > 0 ? branchWiseTotal : metrics.netSale;
-  const totalSalesAmount = formatCurrency(netSaleNum);
+  // TOTAL SALES card and Sales Overview card must read the same metric from the same
+  // sales-report response — Gross Sale, confirmed against live data (headline, prev period,
+  // and growth% all match Gross Sale exactly, not Net Sale or Total). Previously this fell
+  // back to `branchWise.total` (a different endpoint, /widgets/branch-wise-sales), which only
+  // coincidentally matched Gross Sale for single-branch accounts.
+  const totalSalesAmount = formatCurrency(metrics.grossSale);
 
   const prevPeriodText = hasPrevious
-    ? `prev period: ${formatAmountAbbreviated(prevMetrics.total)}`
+    ? `prev period: ${formatAmountAbbreviated(prevMetrics.grossSale)}`
     : '';
 
   const grossSaleVal = formatCurrency(metrics.grossSale);
@@ -273,16 +295,22 @@ export function useWidgetsData({
   const totalCustomersCount = extractInsightsTotal(insights?.total, 'Total Customers');
   const orderChannels = extractOrderChannels(insights?.donut);
 
-  const avgOrderValNum = totalOrdersCount > 0 ? netSaleNum / totalOrdersCount : 0;
+  const prevOrdersCount = extractInsightsTotal(prevInsights?.total, 'Total Orders');
+
+  const avgOrderValNum = totalOrdersCount > 0 ? metrics.grossSale / totalOrdersCount : 0;
   const avgOrderValueDisplay = `Rs. ${avgOrderValNum.toFixed(2)}`;
+  const prevAvgOrderValNum = prevOrdersCount > 0 ? prevMetrics.grossSale / prevOrdersCount : 0;
 
   const computeGrowth = (current: number, previous: number): string => {
-    if (!hasPrevious || previous <= 0) return '';
+    if (previous <= 0) return '';
     const growth = Math.round(((current - previous) / previous) * 100);
     return `${growth >= 0 ? '+' : ''}${growth}%`;
   };
-  const overallGrowth = computeGrowth(metrics.netSale, prevMetrics.netSale);
+  const overallGrowth = computeGrowth(metrics.grossSale, prevMetrics.grossSale);
   const salesTaxGrowth = computeGrowth(metrics.tax, prevMetrics.tax);
+  const discountGrowth = computeGrowth(metrics.discount, prevMetrics.discount);
+  const ordersGrowth = computeGrowth(totalOrdersCount, prevOrdersCount);
+  const avgOrderValueGrowth = computeGrowth(avgOrderValNum, prevAvgOrderValNum);
 
   const totalPaymentAmount = Array.isArray(paymentWise)
     ? paymentWise.reduce((sum, p) => sum + parseNumber(p.value), 0)
@@ -315,6 +343,11 @@ export function useWidgetsData({
       }))
     : [];
 
+  const totalPartyAmount = Array.isArray(partyWise)
+    ? partyWise.reduce((sum, p) => sum + parseNumber(p.value), 0)
+    : 0;
+  const partyTotalDisplay = formatAmountAbbreviated(totalPartyAmount);
+
   return {
     branches,
     salesReport,
@@ -343,6 +376,9 @@ export function useWidgetsData({
     deliveryChargesVal,
     overallGrowth,
     salesTaxGrowth,
+    discountGrowth,
+    ordersGrowth,
+    avgOrderValueGrowth,
     ordersCount: totalOrdersCount,
     avgOrderValueDisplay,
     totalOrdersCount,
@@ -352,6 +388,7 @@ export function useWidgetsData({
     paymentLegend,
     paymentTotalDisplay,
     partyChannels,
+    partyTotalDisplay,
     trendTotalAmount: finalTrendTotalAmount,
     trendTotalOrders: finalTrendTotalOrders,
     trendAvgOrderAmount: finalTrendAvgOrderAmount,
