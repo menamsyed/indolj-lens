@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 import { VectorIcon, IconName } from '../common/VectorIcon';
+import { GradientCardHeader } from '../common/GradientCardHeader';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -25,7 +26,7 @@ export interface OrderInsightsCardProps {
 
 const getChannelStyleMap = (colors: Colors): Record<string, { icon: IconName; color: string; bg: string }> => ({
   dinein: { icon: 'utensils', color: colors.chart.purple, bg: colors.chart.purpleBg },
-  takeaway: { icon: 'store', color: colors.chart.purple, bg: colors.chart.purpleBg },
+  takeaway: { icon: 'store', color: colors.chart.orange, bg: colors.chart.orangeBg },
   delivery: { icon: 'cart', color: colors.chart.blue, bg: colors.chart.blueBg },
   pickup: { icon: 'bowl', color: colors.chart.teal, bg: colors.chart.greenBg },
 });
@@ -55,21 +56,25 @@ export function OrderInsightsCard({
 
   if (isLoading) {
     return (
-      <View style={styles.cardContainer}>
-        <View style={styles.headerRow}>
-          <SkeletonLoader width={120} height={18} borderRadius={4} />
-          <SkeletonLoader width={100} height={12} borderRadius={3} />
-        </View>
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <SkeletonLoader width={32} height={32} borderRadius={8} style={styles.skeletonIcon} />
-            <SkeletonLoader width={40} height={20} borderRadius={4} style={styles.skeletonValue} />
-            <SkeletonLoader width={60} height={11} borderRadius={3} />
+      <View style={styles.cardShadowWrapper}>
+        <View style={styles.cardContainer}>
+          <View style={styles.headerRow}>
+            <SkeletonLoader width={120} height={18} borderRadius={4} />
+            <SkeletonLoader width={100} height={12} borderRadius={3} />
           </View>
-          <View style={styles.statCard}>
-            <SkeletonLoader width={32} height={32} borderRadius={8} style={styles.skeletonIcon} />
-            <SkeletonLoader width={40} height={20} borderRadius={4} style={styles.skeletonValue} />
-            <SkeletonLoader width={60} height={11} borderRadius={3} />
+          <View style={styles.body}>
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <SkeletonLoader width={32} height={32} borderRadius={8} style={styles.skeletonIcon} />
+                <SkeletonLoader width={40} height={20} borderRadius={4} style={styles.skeletonValue} />
+                <SkeletonLoader width={60} height={11} borderRadius={3} />
+              </View>
+              <View style={styles.statCard}>
+                <SkeletonLoader width={32} height={32} borderRadius={8} style={styles.skeletonIcon} />
+                <SkeletonLoader width={40} height={20} borderRadius={4} style={styles.skeletonValue} />
+                <SkeletonLoader width={60} height={11} borderRadius={3} />
+              </View>
+            </View>
           </View>
         </View>
       </View>
@@ -77,117 +82,114 @@ export function OrderInsightsCard({
   }
 
   return (
-    <View style={styles.cardContainer}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <Text style={[typography.h3, styles.cardTitle]}>Order Insights</Text>
-      </View>
+    <View style={styles.cardShadowWrapper}>
+      <View style={styles.cardContainer}>
+        <GradientCardHeader title="Order Insights" subtitle="Customers & order type breakdown" icon="pie-chart" />
 
-      {channels.length > 0 && (
-        <View style={styles.centerChartWrapper}>
-          <PieChart
-            data={channels.map((c) => ({
-              value: c.count,
-              color: (channelStyleMap[c.key] || defaultChannelStyle).color,
-              text: c.label,
-            }))}
-            donut
-            radius={54}
-            innerRadius={38}
-            innerCircleColor={colors.surface.card}
-            centerLabelComponent={renderCenterLabel(totalOrders)}
-            isAnimated
-            animationDuration={800}
-          />
-        </View>
-      )}
-
-      {/* 2 Top Stat Cards (Total Orders vs Total Customers) */}
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <View style={[styles.iconSquare, styles.bgGreenTint]}>
-            <VectorIcon name="file-text" size={16} color={colors.chart.green} />
+        <View style={styles.body}>
+        {channels.length > 0 && (
+          <View style={styles.centerChartWrapper}>
+            <PieChart
+              data={channels.map((c) => ({
+                value: c.count,
+                color: (channelStyleMap[c.key] || defaultChannelStyle).color,
+                text: c.label,
+              }))}
+              donut
+              radius={scale(64, metrics)}
+              innerRadius={scale(30, metrics)}
+              innerCircleColor={colors.surface.card}
+              centerLabelComponent={renderCenterLabel(totalOrders)}
+              isAnimated
+              animationDuration={800}
+            />
           </View>
-          <Text style={[typography.greetingTitle, styles.statValue]}>{totalOrders}</Text>
-          <Text style={[typography.caption, styles.statLabel]}>Total Orders</Text>
-        </View>
+        )}
 
-        <View style={styles.statCard}>
-          <View style={[styles.iconSquare, styles.bgBlueTint]}>
-            <VectorIcon name="user" size={16} color={colors.chart.blue} />
-          </View>
-          <Text style={[typography.greetingTitle, styles.statValue]}>{totalCustomers}</Text>
-          <Text style={[typography.caption, styles.statLabel]}>Total Customers</Text>
-        </View>
-      </View>
-
-      {/* By-Type Breakdown */}
-      {channels.length > 0 ? (
-        channels.map((channel) => {
-          const style = channelStyleMap[channel.key] || defaultChannelStyle;
-          return (
-            <View key={channel.key} style={styles.channelProgressSection}>
-              <View style={styles.channelHeader}>
-                <View style={styles.channelLeft}>
-                  <View style={[styles.channelIconBox, { backgroundColor: style.bg }]}>
-                    <VectorIcon name={style.icon} size={14} color={style.color} />
-                  </View>
-                  <Text style={[typography.bodyMedium, styles.channelName]}>{channel.label}</Text>
-                </View>
-                <Text style={[typography.bodyMedium, styles.channelPercentage]}>
-                  {channel.count} · {channel.percentage}%
-                </Text>
-              </View>
-
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    { width: `${Math.min(channel.percentage, 100)}%`, backgroundColor: style.color },
-                  ]}
-                />
-              </View>
+        {/* 2 Top Stat Cards (Total Orders vs Total Customers) */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <View style={[styles.iconSquare, styles.bgGreenTint]}>
+              <VectorIcon name="file-text" size={20} color={colors.chart.green} />
             </View>
-          );
-        })
-      ) : (
-        <Text style={[typography.caption, styles.emptyText]}>No order-type data for this period.</Text>
-      )}
+            <Text style={[typography.caption, styles.statLabel]}>Total Orders</Text>
+            <Text style={[typography.h3, styles.statValue]}>{totalOrders}</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.iconSquare, styles.bgBlueTint]}>
+              <VectorIcon name="user" size={20} color={colors.chart.blue} />
+            </View>
+            <Text style={[typography.caption, styles.statLabel]}>Total Customers</Text>
+            <Text style={[typography.h3, styles.statValue]}>{totalCustomers}</Text>
+          </View>
+        </View>
+
+        {/* By-Type Breakdown */}
+        {channels.length > 0 ? (
+          channels.map((channel) => {
+            const style = channelStyleMap[channel.key] || defaultChannelStyle;
+            return (
+              <View key={channel.key} style={styles.channelProgressSection}>
+                <View style={styles.channelHeader}>
+                  <View style={styles.channelLeft}>
+                    <View style={[styles.channelIconBox, { backgroundColor: style.bg }]}>
+                      <VectorIcon name={style.icon} size={14} color={style.color} />
+                    </View>
+                    <Text style={[typography.bodyMedium, styles.channelName]}>{channel.label}</Text>
+                  </View>
+                  <Text style={[typography.bodyMedium, styles.channelPercentage]}>
+                    {channel.count} · {channel.percentage}%
+                  </Text>
+                </View>
+
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${Math.min(channel.percentage, 100)}%`, backgroundColor: style.color },
+                    ]}
+                  />
+                </View>
+              </View>
+            );
+          })
+        ) : (
+          <Text style={[typography.caption, styles.emptyText]}>No order-type data for this period.</Text>
+        )}
+        </View>
+      </View>
     </View>
   );
 }
 
 const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
-  const iconSquareSize = scale(32, metrics);
+  const iconSquareSize = scale(40, metrics);
   const channelIconBoxSize = scale(26, metrics);
 
   return StyleSheet.create({
+    cardShadowWrapper: {
+      borderRadius: moderateScale(20, 0.5, metrics),
+      marginBottom: scale(16, metrics),
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.1,
+      shadowRadius: 16,
+      elevation: 6,
+    },
     cardContainer: {
       backgroundColor: colors.surface.card,
       borderRadius: moderateScale(20, 0.5, metrics),
-      padding: moderateScale(16, 0.5, metrics),
-      marginBottom: scale(16, metrics),
-      borderWidth: 1,
-      borderColor: colors.border.light,
-      shadowColor: colors.neutral.black,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
-      shadowRadius: 6,
-      elevation: 2,
+      overflow: 'hidden',
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'baseline',
       justifyContent: 'space-between',
-      marginBottom: scale(14, metrics),
+      padding: moderateScale(16, 0.5, metrics),
     },
-    cardTitle: {
-      fontSize: moderateScale(14, 0.3, metrics),
-      color: colors.text.primary,
-    },
-    subtitleText: {
-      fontSize: moderateScale(11, 0.3, metrics),
-      color: colors.text.muted,
+    body: {
+      padding: moderateScale(16, 0.5, metrics),
     },
     statsRow: {
       flexDirection: 'row',
@@ -206,17 +208,20 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       backgroundColor: colors.neutral.gray50,
       borderRadius: moderateScale(14, 0.5, metrics),
       padding: moderateScale(14, 0.5, metrics),
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: colors.border.light,
+      alignItems: 'flex-start',
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
     },
     iconSquare: {
       width: iconSquareSize,
       height: iconSquareSize,
-      borderRadius: moderateScale(8, 0.5, metrics),
+      borderRadius: moderateScale(12, 0.5, metrics),
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: scale(6, metrics),
+      marginBottom: scale(10, metrics),
     },
     bgGreenTint: {
       backgroundColor: colors.chart.greenBg,
@@ -225,14 +230,14 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       backgroundColor: colors.chart.blueBg,
     },
     statValue: {
-      fontSize: moderateScale(22, 0.3, metrics),
+      fontSize: moderateScale(15, 0.3, metrics),
       color: colors.text.primary,
       fontWeight: fontWeights.bold,
-      marginBottom: scale(2, metrics),
     },
     statLabel: {
-      color: colors.text.secondary,
-      textAlign: 'center',
+      fontSize: moderateScale(11, 0.3, metrics),
+      color: colors.text.muted,
+      marginBottom: scale(2, metrics),
     },
     centerChartWrapper: {
       alignItems: 'center',
@@ -256,9 +261,12 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       backgroundColor: colors.neutral.gray50,
       borderRadius: moderateScale(14, 0.5, metrics),
       padding: moderateScale(12, 0.5, metrics),
-      borderWidth: 1,
-      borderColor: colors.border.light,
       marginBottom: scale(8, metrics),
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
     },
     channelHeader: {
       flexDirection: 'row',
@@ -290,14 +298,14 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
     },
     progressTrack: {
       width: '100%',
-      height: scale(6, metrics),
-      borderRadius: moderateScale(3, 0.5, metrics),
+      height: scale(4, metrics),
+      borderRadius: moderateScale(2, 0.5, metrics),
       backgroundColor: colors.neutral.gray200,
       overflow: 'hidden',
     },
     progressBarFill: {
       height: '100%',
-      borderRadius: moderateScale(3, 0.5, metrics),
+      borderRadius: moderateScale(2, 0.5, metrics),
     },
     emptyText: {
       fontSize: moderateScale(12, 0.3, metrics),

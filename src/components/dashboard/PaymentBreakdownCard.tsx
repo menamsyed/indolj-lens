@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 import { IconName, VectorIcon } from '../common/VectorIcon';
+import { GradientCardHeader } from '../common/GradientCardHeader';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -59,68 +60,77 @@ export function PaymentBreakdownCard({
 
   if (isLoading) {
     return (
-      <View style={styles.cardContainer}>
-        <View style={styles.headerRow}>
-          <SkeletonLoader width={140} height={18} borderRadius={4} />
-          <SkeletonLoader width={80} height={12} borderRadius={3} />
-        </View>
-        <View style={styles.centerChartWrapper}>
-          <SkeletonLoader width={90} height={90} shape="circle" />
+      <View style={styles.cardShadowWrapper}>
+        <View style={styles.cardContainer}>
+          <View style={styles.headerRow}>
+            <SkeletonLoader width={140} height={18} borderRadius={4} />
+            <SkeletonLoader width={80} height={12} borderRadius={3} />
+          </View>
+          <View style={styles.body}>
+            <View style={styles.centerChartWrapper}>
+              <SkeletonLoader width={90} height={90} shape="circle" />
+            </View>
+          </View>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.cardContainer}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <Text style={[typography.h3, styles.cardTitle]}>Payment Breakdown</Text>
-      </View>
-
-      {/* Center Donut Chart */}
-      <View style={styles.centerChartWrapper}>
-        <PieChart
-          data={chartData}
-          donut
-          radius={50}
-          innerRadius={36}
-          innerCircleColor={colors.surface.card}
-          centerLabelComponent={renderCenterBadge(totalAmount)}
-          isAnimated
-          animationDuration={800}
+    <View style={styles.cardShadowWrapper}>
+      <View style={styles.cardContainer}>
+        <GradientCardHeader
+          title="Payment Breakdown"
+          subtitle={`${activeLegend.length} payment method${activeLegend.length === 1 ? '' : 's'}`}
+          icon="wallet"
         />
-      </View>
 
-      {/* One progress row per real payment method */}
-      {activeLegend.length > 0 ? (
-        activeLegend.map((item) => (
-          <View key={item.name} style={styles.progressCard}>
-            <View style={styles.progressHeader}>
-              <View style={styles.leftGroup}>
-                <View style={[styles.cashIconBox, { backgroundColor: colors.chart.greenBg }]}>
-                  <VectorIcon name={getPaymentIconName(item.name)} size={14} color={item.color || colors.chart.green} />
-                </View>
-                <Text style={[typography.bodyMedium, styles.methodName]}>{item.name}</Text>
-              </View>
-              <Text style={[typography.bodyMedium, styles.amountPercentage, { color: item.color || colors.chart.green }]}>
-                {item.percentage}% · Rs. {item.amountDisplay}
-              </Text>
-            </View>
-
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressBarFill,
-                  { width: `${Math.min(item.percentage, 100)}%`, backgroundColor: item.color || colors.chart.green },
-                ]}
-              />
-            </View>
+        <View style={styles.body}>
+          {/* Center Donut Chart */}
+          <View style={styles.centerChartWrapper}>
+            <PieChart
+              data={chartData}
+              donut
+              radius={scale(64, metrics)}
+              innerRadius={scale(30, metrics)}
+              innerCircleColor={colors.surface.card}
+              centerLabelComponent={renderCenterBadge(totalAmount)}
+              isAnimated
+              animationDuration={800}
+            />
           </View>
-        ))
-      ) : (
-        <Text style={[typography.caption, styles.emptyText]}>No payment data for this period.</Text>
-      )}
+
+          {/* One progress row per real payment method */}
+          {activeLegend.length > 0 ? (
+            activeLegend.map((item) => (
+              <View key={item.name} style={styles.progressCard}>
+                <View style={styles.progressHeader}>
+                  <View style={styles.leftGroup}>
+                    <View style={[styles.cashIconBox, { backgroundColor: colors.chart.greenBg }]}>
+                      <VectorIcon name={getPaymentIconName(item.name)} size={14} color={item.color || colors.chart.green} />
+                    </View>
+                    <Text style={[typography.bodyMedium, styles.methodName]}>{item.name}</Text>
+                  </View>
+                  <Text style={[typography.bodyMedium, styles.amountPercentage, { color: item.color || colors.chart.green }]}>
+                    {item.percentage}% · Rs. {item.amountDisplay}
+                  </Text>
+                </View>
+
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${Math.min(item.percentage, 100)}%`, backgroundColor: item.color || colors.chart.green },
+                    ]}
+                  />
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={[typography.caption, styles.emptyText]}>No payment data for this period.</Text>
+          )}
+        </View>
+      </View>
     </View>
   );
 }
@@ -129,32 +139,28 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
   const cashIconBoxSize = scale(26, metrics);
 
   return StyleSheet.create({
+    cardShadowWrapper: {
+      borderRadius: moderateScale(20, 0.5, metrics),
+      marginBottom: scale(16, metrics),
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.1,
+      shadowRadius: 16,
+      elevation: 6,
+    },
     cardContainer: {
       backgroundColor: colors.surface.card,
       borderRadius: moderateScale(20, 0.5, metrics),
-      padding: moderateScale(16, 0.5, metrics),
-      marginBottom: scale(16, metrics),
-      borderWidth: 1,
-      borderColor: colors.border.light,
-      shadowColor: colors.neutral.black,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
-      shadowRadius: 6,
-      elevation: 2,
+      overflow: 'hidden',
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'baseline',
       justifyContent: 'space-between',
-      marginBottom: scale(14, metrics),
+      padding: moderateScale(16, 0.5, metrics),
     },
-    cardTitle: {
-      fontSize: moderateScale(14, 0.3, metrics),
-      color: colors.text.primary,
-    },
-    subtitleText: {
-      fontSize: moderateScale(11, 0.3, metrics),
-      color: colors.text.muted,
+    body: {
+      padding: moderateScale(16, 0.5, metrics),
     },
     centerChartWrapper: {
       alignItems: 'center',
@@ -178,9 +184,12 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       backgroundColor: colors.neutral.gray50,
       borderRadius: moderateScale(14, 0.5, metrics),
       padding: moderateScale(12, 0.5, metrics),
-      borderWidth: 1,
-      borderColor: colors.border.light,
       marginTop: scale(8, metrics),
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
     },
     progressHeader: {
       flexDirection: 'row',
@@ -213,15 +222,15 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
     },
     progressTrack: {
       width: '100%',
-      height: scale(6, metrics),
-      borderRadius: moderateScale(3, 0.5, metrics),
+      height: scale(4, metrics),
+      borderRadius: moderateScale(2, 0.5, metrics),
       backgroundColor: colors.neutral.gray200,
       overflow: 'hidden',
     },
     progressBarFill: {
       height: '100%',
       backgroundColor: colors.chart.green,
-      borderRadius: moderateScale(3, 0.5, metrics),
+      borderRadius: moderateScale(2, 0.5, metrics),
     },
     emptyText: {
       fontSize: moderateScale(12, 0.3, metrics),

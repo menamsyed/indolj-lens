@@ -2,11 +2,12 @@ import React, { useMemo, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import { VectorIcon } from '../common/VectorIcon';
+import { GradientCardHeader } from '../common/GradientCardHeader';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
-import { typography, fontWeights, primaryFontFamily } from '../../styles/typography';
+import { fontWeights, primaryFontFamily } from '../../styles/typography';
 import { ScreenMetrics, moderateScale, scale, verticalScale } from '../../utils/responsive';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -154,105 +155,110 @@ export function SalesTrendCard({
 
   if (isLoading) {
     return (
-      <View style={styles.cardContainer}>
-        <View style={styles.headerRow}>
-          <SkeletonLoader width={120} height={18} borderRadius={4} />
-        </View>
-        <View style={styles.topStatsRow}>
-          {[1, 2, 3].map((key) => (
-            <View key={key} style={styles.statTile}>
-              <SkeletonLoader width={28} height={28} borderRadius={14} style={styles.skeletonIcon} />
-              <SkeletonLoader width={50} height={14} borderRadius={4} style={styles.skeletonValue} />
-              <SkeletonLoader width={60} height={10} borderRadius={3} />
+      <View style={styles.cardShadowWrapper}>
+        <View style={styles.cardContainer}>
+          <View style={styles.headerRow}>
+            <SkeletonLoader width={120} height={18} borderRadius={4} />
+          </View>
+          <View style={styles.body}>
+            <View style={styles.topStatsRow}>
+              {[1, 2, 3].map((key) => (
+                <View key={key} style={styles.statTile}>
+                  <SkeletonLoader width={28} height={28} borderRadius={14} style={styles.skeletonIcon} />
+                  <SkeletonLoader width={50} height={14} borderRadius={4} style={styles.skeletonValue} />
+                  <SkeletonLoader width={60} height={10} borderRadius={3} />
+                </View>
+              ))}
             </View>
-          ))}
+          </View>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.cardContainer} onLayout={onLayout}>
-      {/* Header Row */}
-      <View style={styles.headerRow}>
-        <Text style={[typography.h3, styles.cardTitle]}>Sales Trend</Text>
+    <View style={styles.cardShadowWrapper}>
+      <View style={styles.cardContainer}>
+        <GradientCardHeader title="Sales Trend" subtitle="Hourly sales & orders" icon="chart" />
+
+        <View style={styles.body} onLayout={onLayout}>
+        {/* 3 Top Summary Stat Cards — Equal Width 3-Column Layout */}
+        <View style={styles.topStatsRow}>
+          {/* Card 1: Total Amount */}
+          <View style={styles.statTile}>
+            <View style={[styles.iconBox, styles.bgCircleGrey]}>
+              <VectorIcon name="chart" size={14} color={colors.text.secondary} />
+            </View>
+            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
+              {totalAmount || 'Rs. 0'}
+            </Text>
+            <Text style={styles.statLabel} numberOfLines={2}>
+              Total Amount
+            </Text>
+          </View>
+
+          {/* Card 2: Total Orders */}
+          <View style={styles.statTile}>
+            <View style={[styles.iconBox, styles.bgSquareBrand]}>
+              <VectorIcon
+                name="user"
+                size={14}
+                color={isDarkMode ? colors.text.white : colors.brand.primary}
+              />
+            </View>
+            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
+              {totalOrders}
+            </Text>
+            <Text style={styles.statLabel} numberOfLines={2}>
+              Total Orders
+            </Text>
+          </View>
+
+          {/* Card 3: Average Order Amount */}
+          <View style={styles.statTile}>
+            <View style={[styles.iconBox, styles.bgCircleGrey]}>
+              <VectorIcon name="chart" size={14} color={colors.text.secondary} />
+            </View>
+            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
+              {avgOrderAmount || 'Rs. 0'}
+            </Text>
+            <Text style={styles.statLabel} numberOfLines={2}>
+              Average Order Amount
+            </Text>
+          </View>
+        </View>
+
+        {/* Contained Horizontally-Scrollable Bar Chart Body */}
+        <View style={styles.chartWrapper}>
+          <BarChart
+            data={chartBarData}
+            barWidth={chartDimensions.barWidth}
+            spacing={chartDimensions.spacing}
+            initialSpacing={chartDimensions.initialSpacing}
+            barBorderTopLeftRadius={chartDimensions.barRadius}
+            barBorderTopRightRadius={chartDimensions.barRadius}
+            showGradient={true}
+            gradientColor={"white"}
+            yAxisTextStyle={styles.axisText}
+            yAxisColor={colors.border.light}
+            xAxisColor={colors.border.light}
+            rulesColor={colors.border.light}
+            rulesType="solid"
+            noOfSections={4}
+            maxValue={maxValue}
+            height={chartDimensions.height}
+            yAxisLabelWidth={chartDimensions.yAxisLabelWidth}
+            formatYLabel={formatYAxisLabel}
+            overflowTop={chartDimensions.overflowTop}
+            isAnimated={false}
+            renderTooltip={renderBarTooltip}
+            autoCenterTooltip
+            leftShiftForLastIndexTooltip={0}
+            focusedBarIndex={selectedIndex ?? undefined}
+            onPress={handleBarPress}
+          />
+        </View>
       </View>
-
-      {/* 3 Top Summary Stat Cards — Equal Width 3-Column Layout */}
-      <View style={styles.topStatsRow}>
-        {/* Card 1: Total Amount */}
-        <View style={styles.statTile}>
-          <View style={[styles.iconBox, styles.bgCircleGrey]}>
-            <VectorIcon name="chart" size={14} color={colors.text.secondary} />
-          </View>
-          <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-            {totalAmount || 'Rs. 0'}
-          </Text>
-          <Text style={styles.statLabel} numberOfLines={2}>
-            Total Amount
-          </Text>
-        </View>
-
-        {/* Card 2: Total Orders */}
-        <View style={styles.statTile}>
-          <View style={[styles.iconBox, styles.bgSquareBrand]}>
-            <VectorIcon
-              name="user"
-              size={14}
-              color={isDarkMode ? colors.text.white : colors.brand.primary}
-            />
-          </View>
-          <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-            {totalOrders}
-          </Text>
-          <Text style={styles.statLabel} numberOfLines={2}>
-            Total Orders
-          </Text>
-        </View>
-
-        {/* Card 3: Average Order Amount */}
-        <View style={styles.statTile}>
-          <View style={[styles.iconBox, styles.bgCircleGrey]}>
-            <VectorIcon name="chart" size={14} color={colors.text.secondary} />
-          </View>
-          <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-            {avgOrderAmount || 'Rs. 0'}
-          </Text>
-          <Text style={styles.statLabel} numberOfLines={2}>
-            Average Order Amount
-          </Text>
-        </View>
-      </View>
-
-      {/* Contained Horizontally-Scrollable Bar Chart Body */}
-      <View style={styles.chartWrapper}>
-        <BarChart
-          data={chartBarData}
-          barWidth={chartDimensions.barWidth}
-          spacing={chartDimensions.spacing}
-          initialSpacing={chartDimensions.initialSpacing}
-          barBorderTopLeftRadius={chartDimensions.barRadius}
-          barBorderTopRightRadius={chartDimensions.barRadius}
-          showGradient={true}
-          gradientColor={"white"}
-          yAxisTextStyle={styles.axisText}
-          yAxisColor={colors.border.light}
-          xAxisColor={colors.border.light}
-          rulesColor={colors.border.light}
-          rulesType="solid"
-          noOfSections={4}
-          maxValue={maxValue}
-          height={chartDimensions.height}
-          yAxisLabelWidth={chartDimensions.yAxisLabelWidth}
-          formatYLabel={formatYAxisLabel}
-          overflowTop={chartDimensions.overflowTop}
-          isAnimated={false}
-          renderTooltip={renderBarTooltip}
-          autoCenterTooltip
-          leftShiftForLastIndexTooltip={0}
-          focusedBarIndex={selectedIndex ?? undefined}
-          onPress={handleBarPress}
-        />
       </View>
     </View>
   );
@@ -262,29 +268,28 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
   const iconBoxSize = scale(28, metrics);
 
   return StyleSheet.create({
+    cardShadowWrapper: {
+      borderRadius: moderateScale(20, 0.5, metrics),
+      marginBottom: scale(16, metrics),
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.1,
+      shadowRadius: 16,
+      elevation: 6,
+    },
     cardContainer: {
       backgroundColor: colors.surface.card,
       borderRadius: moderateScale(20, 0.5, metrics),
-      padding: moderateScale(16, 0.5, metrics),
-      marginBottom: scale(16, metrics),
-      borderWidth: 1,
-      borderColor: colors.border.light,
-      shadowColor: colors.neutral.black,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
-      shadowRadius: 6,
-      elevation: 2,
       overflow: 'hidden',
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: scale(14, metrics),
+      padding: moderateScale(16, 0.5, metrics),
     },
-    cardTitle: {
-      fontSize: moderateScale(14, 0.3, metrics),
-      color: colors.text.primary,
+    body: {
+      padding: moderateScale(16, 0.5, metrics),
     },
     topStatsRow: {
       flexDirection: 'row',
@@ -301,8 +306,11 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       paddingHorizontal: scale(4, metrics),
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: colors.border.light,
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
     },
     iconBox: {
       width: iconBoxSize,
@@ -345,8 +353,6 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       paddingTop: verticalScale(CHART_WRAPPER_PADDING_TOP, metrics),
       paddingBottom: verticalScale(45, metrics),
       paddingHorizontal: scale(CHART_WRAPPER_PADDING_H, metrics),
-      borderWidth: 1,
-      borderColor: colors.border.light,
       // Clip the whole chart (bars, rules, gridlines) to this rounded container. The pressed-bar
       // tooltip no longer needs this to be 'visible' — it renders via BarChart's own native
       // `renderTooltip`, positioned within the chart's own reserved `overflowTop` clearance, not
