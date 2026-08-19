@@ -37,7 +37,9 @@ export type IconName =
   | 'filter'
   | 'moon'
   | 'sun'
-  | 'x';
+  | 'x'
+  | 'trending-up'
+  | 'trending-down';
 
 export interface VectorIconProps {
   name: IconName;
@@ -334,6 +336,22 @@ export function VectorIcon({
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
           <Path d="M18 6L6 18" />
           <Path d="M6 6l12 12" />
+        </Svg>
+      );
+
+    case 'trending-up':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M23 6L13.5 15.5L8.5 10.5L1 18" />
+          <Path d="M17 6H23V12" />
+        </Svg>
+      );
+
+    case 'trending-down':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M23 18L13.5 8.5L8.5 13.5L1 6" />
+          <Path d="M17 18H23V12" />
         </Svg>
       );
 
