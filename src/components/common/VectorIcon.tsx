@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path, Circle, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Line, Rect } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
 
 export type IconName =
@@ -39,7 +39,9 @@ export type IconName =
   | 'sun'
   | 'x'
   | 'trending-up'
-  | 'trending-down';
+  | 'trending-down'
+  | 'globe'
+  | 'inbox';
 
 export interface VectorIconProps {
   name: IconName;
@@ -352,6 +354,23 @@ export function VectorIcon({
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
           <Path d="M23 18L13.5 8.5L8.5 13.5L1 6" />
           <Path d="M17 18H23V12" />
+        </Svg>
+      );
+
+    case 'globe':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <Circle cx="12" cy="12" r="10" />
+          <Line x1="2" y1="12" x2="22" y2="12" />
+          <Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </Svg>
+      );
+
+    case 'inbox':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M22 12h-6l-2 3h-4l-2-3H2" />
+          <Path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
         </Svg>
       );
 
