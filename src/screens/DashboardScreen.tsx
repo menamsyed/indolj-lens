@@ -78,6 +78,9 @@ export function DashboardScreen(): React.JSX.Element {
     deliveryChargesVal,
     overallGrowth,
     salesTaxGrowth,
+    discountGrowth,
+    ordersGrowth,
+    avgOrderValueGrowth,
     ordersCount,
     avgOrderValueDisplay,
     totalOrdersCount,
@@ -87,6 +90,7 @@ export function DashboardScreen(): React.JSX.Element {
     paymentLegend,
     paymentTotalDisplay,
     partyChannels,
+    partyTotalDisplay,
     trendTotalAmount,
     trendTotalOrders,
     trendAvgOrderAmount,
@@ -124,7 +128,7 @@ export function DashboardScreen(): React.JSX.Element {
     { label: 'Gross Sale', value: grossSaleVal, iconName: 'chart' as const, iconBgColor: '#E8F8F5', iconColor: '#27AE60' },
     { label: 'Refund', value: refundVal, iconName: 'back' as const, iconBgColor: '#FDEDEC', iconColor: '#E74C3C' },
     { label: 'Cancelled', value: cancelledVal, iconName: 'lock' as const, iconBgColor: '#FDEDEC', iconColor: '#E74C3C' },
-    { label: 'Cancelled Order Count', value: cancelledOrderCountVal, iconName: 'user' as const, iconBgColor: '#E8F8F5', iconColor: '#16A085' },
+    { label: 'Cancelled Order Count', value: cancelledOrderCountVal, iconName: 'user' as const, iconBgColor: '#E8F8F5', iconColor: '#16A085', isCount: true },
     { label: 'FOC', value: focVal, iconName: 'utensils' as const, iconBgColor: '#E8F8F5', iconColor: '#27AE60' },
     { label: 'Discount', value: discountVal, iconName: 'percent' as const, iconBgColor: '#FEF9E7', iconColor: '#F39C12' },
     { label: 'Net Sale', value: netSaleVal, iconName: 'store' as const, iconBgColor: '#EBF5FB', iconColor: '#2980B9' },
@@ -164,10 +168,11 @@ export function DashboardScreen(): React.JSX.Element {
             netSalesAmount={totalSalesAmount}
             prevPeriodText={prevPeriodText}
             ordersCount={ordersCount}
-            ordersGrowth=""
+            ordersGrowth={ordersGrowth}
             avgOrderValue={avgOrderValueDisplay}
-            avgOrderValueGrowth=""
+            avgOrderValueGrowth={avgOrderValueGrowth}
             discountAmount={discountVal}
+            discountGrowth={discountGrowth}
             salesTaxAmount={taxVal}
             salesTaxGrowth={salesTaxGrowth}
             overallGrowth={overallGrowth}
@@ -195,6 +200,7 @@ export function DashboardScreen(): React.JSX.Element {
 
           {/* 5. Party wise Sales */}
           <PartyWiseSalesCard
+            totalAmount={partyTotalDisplay}
             parties={partyChannels}
             isLoading={isLoading}
           />
