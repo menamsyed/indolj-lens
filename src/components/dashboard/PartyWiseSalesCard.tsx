@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
+import { CircularProgress } from '../common/CircularProgress';
 import { GradientCardHeader } from '../common/GradientCardHeader';
 import { SkeletonLoader } from '../common/SkeletonLoader';
+import { VectorIcon, IconName } from '../common/VectorIcon';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
@@ -25,6 +27,35 @@ export interface PartyWiseSalesCardProps {
 const DEFAULT_PARTIES: PartyChannelItem[] = [
   { name: 'Takeaway', salesValue: 'Rs.38,120.20', orders: 4, percentage: 100 },
 ];
+
+// Same normalized-key convention as OrderInsightsCard's getChannelStyleMap ('dinein',
+// 'takeaway', ...), keyed off the party's own display name since PartyChannelItem has no
+// separate `key` field. Unrecognized/future channel names fall back to 'grid', matching that
+// same card's fallback.
+const PARTY_ICON_MAP: Record<string, IconName> = {
+  dinein: 'utensils',
+  takeaway: 'store',
+  website: 'globe',
+  online: 'globe',
+  foodpanda: 'cart',
+  delivery: 'cart',
+  pickup: 'bowl',
+};
+
+const getPartyIcon = (name: string): IconName =>
+  PARTY_ICON_MAP[name.trim().toLowerCase().replace(/\s+/g, '')] ?? 'grid';
+
+// Splits a flat list into fixed-size-2 rows so the grid below can render an explicit
+// `flexDirection: 'row'` per pair instead of a wrapping percentage-width grid — same
+// technique as SalesOverviewCard's chunkPairs, guarantees exactly two columns on every
+// screen size regardless of how many party channels the API returns.
+function chunkPairs<T>(items: T[]): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += 2) {
+    rows.push(items.slice(i, i + 2));
+  }
+  return rows;
+}
 
 export function PartyWiseSalesCard({
   totalAmount = '0',
@@ -82,6 +113,19 @@ export function PartyWiseSalesCard({
             <View style={styles.centerChartWrapper}>
               <SkeletonLoader width={100} height={100} shape="circle" />
             </View>
+            <View style={styles.metricsGrid}>
+              {chunkPairs([1, 2, 3, 4]).map((row, rowIndex) => (
+                <View key={rowIndex} style={styles.metricsRow}>
+                  {row.map((key) => (
+                    <View key={key} style={styles.partyTile}>
+                      <SkeletonLoader width={44} height={44} shape="circle" style={styles.skeletonRing} />
+                      <SkeletonLoader width={60} height={11} borderRadius={3} style={styles.skeletonLabel} />
+                      <SkeletonLoader width={80} height={16} borderRadius={4} />
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
           </View>
         </View>
       </View>
@@ -112,50 +156,50 @@ export function PartyWiseSalesCard({
             />
           </View>
 
-          {/* Breakdown List for each Party Channel */}
+          {/* Breakdown Grid for each Party Channel — two tiles per row (same geometry as
+              SalesOverviewCard's metricTile grid), each with its own circular progress ring
+              (share of the total) and Label / Value / Orders stacked below it. */}
           {activeParties.length > 0 ? (
-            activeParties.map((party, index) => {
-              const accentColor = partyColors[index % partyColors.length];
-              return (
-                <View key={party.name} style={styles.partyProgressCard}>
-                  <View style={styles.partyHeader}>
-                    <View style={styles.leftGroup}>
-                      <View style={[styles.colorDot, { backgroundColor: accentColor }]} />
-                      <Text style={[typography.bodyMedium, styles.partyName]}>{party.name}</Text>
-                    </View>
+            <View style={styles.metricsGrid}>
+              {chunkPairs(activeParties.map((party, index) => ({ party, index }))).map((row, rowIndex) => (
+                <View key={rowIndex} style={styles.metricsRow}>
+                  {row.map(({ party, index }) => {
+                    const accentColor = partyColors[index % partyColors.length];
+                    const clampedShare = Math.min(Math.max(party.percentage, 0), 100);
 
-                    <View style={styles.rightGroup}>
-                      <Text style={[typography.bodyMedium, styles.partySalesValue]}>
-                        {party.salesValue}
-                      </Text>
-                    </View>
-                  </View>
+                    return (
+                      <View key={party.name} style={styles.partyTile}>
+                        <CircularProgress
+                          percentage={clampedShare}
+                          size={scale(44, metrics)}
+                          strokeWidth={scale(6, metrics)}
+                          color={accentColor}
+                          trackColor={colors.neutral.gray200}
+                          animationDuration={600}
+                        >
+                          <Text style={[styles.ringPercentText, { color: accentColor }]}>
+                            {Math.round(clampedShare)}%
+                          </Text>
+                        </CircularProgress>
 
-                  {/* Progress bar track */}
-                  <View style={styles.progressTrack}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        {
-                          width: `${Math.min(party.percentage, 100)}%`,
-                          backgroundColor: accentColor,
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  {/* Sub Info Row (Orders & Percentage) */}
-                  <View style={styles.partySubRow}>
-                    <Text style={[typography.caption, styles.orderBadgeText]}>
-                      {party.orders} {party.orders === 1 ? 'Order' : 'Orders'}
-                    </Text>
-                    <Text style={[typography.caption, styles.percentageText, { color: accentColor }]}>
-                      {party.percentage}% Share
-                    </Text>
-                  </View>
+                        <View style={styles.labelRow}>
+                          <VectorIcon name={getPartyIcon(party.name)} size={12} color={accentColor} strokeWidth={2} />
+                          <Text style={[typography.caption, styles.partyName]} numberOfLines={1}>
+                            {party.name}
+                          </Text>
+                        </View>
+                        <Text style={[typography.h3, styles.partySalesValue]} numberOfLines={1} adjustsFontSizeToFit>
+                          {party.salesValue}
+                        </Text>
+                        <Text style={[typography.caption, styles.orderCountText]} numberOfLines={1}>
+                          {party.orders} {party.orders === 1 ? 'order' : 'orders'}
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
-              );
-            })
+              ))}
+            </View>
           ) : (
             <Text style={[typography.caption, styles.emptyText]}>No party-wise data for this period.</Text>
           )}
@@ -208,70 +252,65 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       color: colors.text.primary,
       fontWeight: fontWeights.bold,
     },
-    partyProgressCard: {
+    metricsGrid: {
+      marginTop: scale(6, metrics),
+      gap: scale(10, metrics),
+    },
+    metricsRow: {
+      flexDirection: 'row',
+      gap: scale(10, metrics),
+    },
+    partyTile: {
+      // See SalesOverviewCard.tsx's metricTile for why this needs to be explicit rather
+      // than the `flex: 1` shorthand: flexBasis: 0 forces the tile to grow purely by its
+      // (equal) flexGrow ratio instead of its own content size, and minWidth: 0 stops a
+      // long party name from re-imposing a content floor that would squeeze its sibling.
+      flexGrow: 1,
+      flexShrink: 1,
+      flexBasis: 0,
+      minWidth: 0,
       backgroundColor: colors.neutral.gray50,
       borderRadius: moderateScale(14, 0.5, metrics),
       padding: moderateScale(12, 0.5, metrics),
-      marginTop: scale(10, metrics),
+      alignItems: 'flex-start',
       shadowColor: colors.neutral.black,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05,
       shadowRadius: 6,
       elevation: 2,
     },
-    partyHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: scale(8, metrics),
-    },
-    leftGroup: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: scale(8, metrics),
-    },
-    colorDot: {
-      width: scale(10, metrics),
-      height: scale(10, metrics),
-      borderRadius: scale(5, metrics),
-    },
-    partyName: {
-      fontSize: moderateScale(13.5, 0.3, metrics),
-      color: colors.text.primary,
-      fontWeight: fontWeights.semiBold,
-    },
-    rightGroup: {
-      alignItems: 'flex-end',
-    },
-    partySalesValue: {
-      fontSize: moderateScale(13.5, 0.3, metrics),
-      color: colors.text.primary,
+    ringPercentText: {
+      fontSize: moderateScale(9.5, 0.3, metrics),
       fontWeight: fontWeights.bold,
     },
-    progressTrack: {
-      width: '100%',
-      height: scale(4, metrics),
-      borderRadius: moderateScale(2, 0.5, metrics),
-      backgroundColor: colors.neutral.gray200,
-      overflow: 'hidden',
-      marginBottom: scale(6, metrics),
-    },
-    progressBarFill: {
-      height: '100%',
-      borderRadius: moderateScale(2, 0.5, metrics),
-    },
-    partySubRow: {
+    labelRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: scale(4, metrics),
+      marginTop: scale(10, metrics),
+      marginBottom: scale(2, metrics),
     },
-    orderBadgeText: {
+    partyName: {
+      flexShrink: 1,
+      fontSize: moderateScale(12, 0.3, metrics),
+      color: colors.text.secondary,
+      fontWeight: fontWeights.medium,
+    },
+    partySalesValue: {
+      fontSize: moderateScale(16, 0.3, metrics),
+      color: colors.text.primary,
+      fontWeight: fontWeights.bold,
+      marginBottom: scale(2, metrics),
+    },
+    orderCountText: {
       fontSize: moderateScale(11.5, 0.3, metrics),
       color: colors.text.muted,
     },
-    percentageText: {
-      fontSize: moderateScale(11.5, 0.3, metrics),
-      fontWeight: fontWeights.bold,
+    skeletonRing: {
+      marginBottom: scale(10, metrics),
+    },
+    skeletonLabel: {
+      marginBottom: scale(6, metrics),
     },
     emptyText: {
       fontSize: moderateScale(12, 0.3, metrics),
