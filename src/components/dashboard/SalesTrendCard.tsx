@@ -59,7 +59,7 @@ export function SalesTrendCard({
   barData,
   isLoading = false,
 }: SalesTrendCardProps): React.JSX.Element {
-  const { colors, isDarkMode } = useTheme();
+  const { colors } = useTheme();
   const metrics = useResponsive();
   const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
   const defaultBars = useMemo(() => getDefaultBarData(), []);
@@ -186,8 +186,8 @@ export function SalesTrendCard({
         <View style={styles.topStatsRow}>
           {/* Card 1: Total Amount */}
           <View style={styles.statTile}>
-            <View style={[styles.iconBox, styles.bgCircleGrey]}>
-              <VectorIcon name="chart" size={14} color={colors.text.secondary} />
+            <View style={[styles.iconBox, styles.iconBgTotalAmount]}>
+              <VectorIcon name="wallet" size={14} color={colors.chart.green} />
             </View>
             <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {totalAmount || 'Rs. 0'}
@@ -199,12 +199,8 @@ export function SalesTrendCard({
 
           {/* Card 2: Total Orders */}
           <View style={styles.statTile}>
-            <View style={[styles.iconBox, styles.bgSquareBrand]}>
-              <VectorIcon
-                name="user"
-                size={14}
-                color={isDarkMode ? colors.text.white : colors.brand.primary}
-              />
+            <View style={[styles.iconBox, styles.iconBgTotalOrders]}>
+              <VectorIcon name="cart" size={14} color={colors.chart.blue} />
             </View>
             <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {totalOrders}
@@ -216,8 +212,8 @@ export function SalesTrendCard({
 
           {/* Card 3: Average Order Amount */}
           <View style={styles.statTile}>
-            <View style={[styles.iconBox, styles.bgCircleGrey]}>
-              <VectorIcon name="chart" size={14} color={colors.text.secondary} />
+            <View style={[styles.iconBox, styles.iconBgAvgOrder]}>
+              <VectorIcon name="calculator" size={14} color={colors.chart.orange} />
             </View>
             <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {avgOrderAmount || 'Rs. 0'}
@@ -228,7 +224,11 @@ export function SalesTrendCard({
           </View>
         </View>
 
-        {/* Contained Horizontally-Scrollable Bar Chart Body */}
+        {/* Contained Horizontally-Scrollable Bar Chart Body — shadow lives on the outer,
+            un-clipped wrapper since a shadow on the same view as chartWrapper's
+            `overflow: 'hidden'` (needed to clip bars/rules to the rounded corners) would get
+            clipped away on iOS, same two-layer pattern as every other card in this file/app. */}
+        <View style={styles.chartShadowWrapper}>
         <View style={styles.chartWrapper}>
           <BarChart
             data={chartBarData}
@@ -238,7 +238,7 @@ export function SalesTrendCard({
             barBorderTopLeftRadius={chartDimensions.barRadius}
             barBorderTopRightRadius={chartDimensions.barRadius}
             showGradient={true}
-            gradientColor={"white"}
+            gradientColor={colors.neutral.gray50}
             yAxisTextStyle={styles.axisText}
             yAxisColor={colors.border.light}
             xAxisColor={colors.border.light}
@@ -257,6 +257,7 @@ export function SalesTrendCard({
             focusedBarIndex={selectedIndex ?? undefined}
             onPress={handleBarPress}
           />
+        </View>
         </View>
       </View>
       </View>
@@ -312,20 +313,24 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       shadowRadius: 6,
       elevation: 2,
     },
+    // Same container shape (size + radius) for all three stat tiles — only the background/icon
+    // color differs per card, same convention as SalesOverviewCard's per-metric icon tiles.
     iconBox: {
       width: iconBoxSize,
       height: iconBoxSize,
+      borderRadius: moderateScale(8, 0.5, metrics),
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: scale(6, metrics),
     },
-    bgCircleGrey: {
-      backgroundColor: colors.neutral.gray100,
-      borderRadius: iconBoxSize / 2,
+    iconBgTotalAmount: {
+      backgroundColor: colors.chart.greenBg,
     },
-    bgSquareBrand: {
-      backgroundColor: colors.brand.tint || '#FCEBEB',
-      borderRadius: moderateScale(8, 0.5, metrics),
+    iconBgTotalOrders: {
+      backgroundColor: colors.chart.blueBg,
+    },
+    iconBgAvgOrder: {
+      backgroundColor: colors.chart.orangeBg,
     },
     statValue: {
       fontFamily: primaryFontFamily,
@@ -345,6 +350,18 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       lineHeight: moderateScale(11.5, 0.3, metrics),
       textAlign: 'center',
       width: '100%',
+    },
+    // Same two-layer split as cardShadowWrapper/cardContainer above: shadow on this un-clipped
+    // outer view, background/radius/overflow-clipping on the inner one — a shadow on the same
+    // view as chartWrapper's `overflow: 'hidden'` would get clipped away on iOS.
+    chartShadowWrapper: {
+      width: '100%',
+      borderRadius: moderateScale(16, 0.5, metrics),
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
     },
     chartWrapper: {
       width: '100%',
