@@ -1,19 +1,21 @@
 import React, { useMemo } from 'react';
 import {
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { VectorIcon } from '../common/VectorIcon';
+import { DataTable, DataTableColumn } from '../common/DataTable';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
-import { typography, fontWeights } from '../../styles/typography';
+import { typography } from '../../styles/typography';
 import { MatrixTableResponse } from '../../api/services/widgetService';
 import { formatCurrency, parseNumber } from '../../utils/formatters';
 import { ScreenMetrics, moderateScale, scale } from '../../utils/responsive';
+
+type MatrixRow = (string | number)[];
 
 // Column meaning is read from the real header name, not its position — table column order
 // isn't guaranteed to stay fixed across endpoints (see docs/POS_DASHBOARD_WORKFLOW.md Step 6.7).
@@ -62,9 +64,27 @@ export function MatrixReportView({
   // First column (usually a name/label) gets more room; every other real column gets a fixed
   // width and the table scrolls horizontally — don't silently drop columns past the 4th, several
   // real endpoints (branch-wise-sales, new-order-list) return 6.
-  const FIRST_COL_WIDTH = scale(150, metrics);
-  const OTHER_COL_WIDTH = scale(110, metrics);
-  const columnWidth = (idx: number): number => (idx === 0 ? FIRST_COL_WIDTH : OTHER_COL_WIDTH);
+  //
+  // thead and tbody aren't guaranteed to agree on column count — a live branch-wise-sales
+  // response has returned only 2 header names for 6-column rows. Render every column the DATA
+  // actually has (the widest row, or headers.length if there's no data yet), with a blank header
+  // label for any column past the end of `headers`, so real values are never silently dropped
+  // just because their header name wasn't sent.
+  const columnCount = Math.max(headers.length, rows[0]?.length ?? 0);
+  const columns: DataTableColumn<MatrixRow>[] = useMemo(
+    () =>
+      Array.from({ length: columnCount }, (_, idx) => {
+        const header = headers[idx] ?? '';
+        return {
+          key: `col-${idx}`,
+          header,
+          width: idx === 0 ? 150 : 110,
+          align: idx === 0 ? 'left' : 'right',
+          renderCell: (row: MatrixRow) => formatMatrixCell(row[idx], header),
+        };
+      }),
+    [headers, columnCount]
+  );
 
   return (
     <View style={styles.container}>
@@ -93,71 +113,14 @@ export function MatrixReportView({
           <Text style={[typography.caption, styles.recordsCountText]}>{rows.length} entries</Text>
         </View>
 
-        {/* Matrix Table Card — bounded to the remaining space (flex: 1); the table itself
-            scrolls both vertically (rows) and horizontally (wide tables, 5-6+ columns) */}
-        <View style={styles.tableCard}>
-          <ScrollView style={styles.tableVerticalScroll}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={rows.length > 0}>
-              <View>
-                {/* Table Header Row */}
-                <View style={styles.tableHeaderRow}>
-                  {headers.map((h, idx) => (
-                    <Text
-                      key={h}
-                      style={[
-                        typography.bodyMedium,
-                        styles.headerCell,
-                        { width: columnWidth(idx) },
-                        idx === 0 ? styles.cellLeft : styles.cellRight,
-                      ]}
-                    >
-                      {h}
-                    </Text>
-                  ))}
-                </View>
-
-                {/* Table Rows */}
-                {rows.length === 0 ? (
-                  <View style={styles.emptyRow}>
-                    <Text style={[typography.bodyMedium, styles.emptyText]}>No records found for this period</Text>
-                  </View>
-                ) : (
-                  rows.map((row, rIdx) => (
-                    <View
-                      key={`matrix-row-${rIdx}`}
-                      style={[
-                        styles.tableRow,
-                        rIdx % 2 === 1 && styles.tableRowAlt,
-                      ]}
-                    >
-                      {row.map((cell, cIdx) => (
-                        <Text
-                          key={`cell-${rIdx}-${cIdx}`}
-                          style={[
-                            typography.bodyMedium,
-                            cIdx === 0 ? styles.cellTextBold : styles.cellText,
-                            { width: columnWidth(cIdx) },
-                            cIdx === 0 ? styles.cellLeft : styles.cellRight,
-                          ]}
-                        >
-                          {formatMatrixCell(cell, headers[cIdx] || '')}
-                        </Text>
-                      ))}
-                    </View>
-                  ))
-                )}
-              </View>
-            </ScrollView>
-          </ScrollView>
-
-          {/* Total Footer Row — pinned outside the scroll, always visible, full width */}
-          {totalAmount && (
-            <View style={styles.totalFooterRow}>
-              <Text style={[typography.bodyMedium, styles.totalLabelText]}>TOTAL</Text>
-              <Text style={[typography.h3, styles.totalValueText]}>{totalAmount}</Text>
-            </View>
-          )}
-        </View>
+        {/* Matrix Table — bounded to the remaining space (flex: 1); scrolls both vertically
+            (rows) and horizontally (wide tables, 5-6+ columns) inside DataTable itself */}
+        <DataTable
+          columns={columns}
+          data={rows}
+          keyExtractor={(_row, idx) => `matrix-row-${idx}`}
+          footer={totalAmount ? { label: 'TOTAL', value: totalAmount } : undefined}
+        />
       </View>
     </View>
   );
@@ -227,87 +190,6 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
     },
     recordsCountText: {
       color: colors.text.secondary,
-    },
-    tableCard: {
-      flex: 1,
-      backgroundColor: colors.surface.card,
-      borderRadius: moderateScale(20, 0.5, metrics),
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: colors.border.light,
-      shadowColor: colors.neutral.black,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 3,
-    },
-    tableVerticalScroll: {
-      flex: 1,
-    },
-    tableHeaderRow: {
-      flexDirection: 'row',
-      backgroundColor: colors.brand.primary,
-      paddingHorizontal: scale(16, metrics),
-      paddingVertical: scale(14, metrics),
-    },
-    headerCell: {
-      fontSize: moderateScale(13, 0.3, metrics),
-      fontWeight: fontWeights.bold,
-      color: colors.text.white,
-    },
-    tableRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: scale(16, metrics),
-      paddingVertical: scale(14, metrics),
-      backgroundColor: colors.surface.card,
-      borderBottomWidth: 1,
-      borderColor: colors.border.light,
-    },
-    tableRowAlt: {
-      backgroundColor: colors.neutral.gray50,
-    },
-    cellLeft: {
-      textAlign: 'left',
-    },
-    cellRight: {
-      textAlign: 'right',
-      paddingRight: scale(4, metrics),
-    },
-    cellTextBold: {
-      fontSize: moderateScale(13.5, 0.3, metrics),
-      fontWeight: fontWeights.bold,
-      color: colors.text.primary,
-    },
-    cellText: {
-      fontSize: moderateScale(13, 0.3, metrics),
-      color: colors.text.primary,
-    },
-    emptyRow: {
-      padding: moderateScale(24, 0.5, metrics),
-      alignItems: 'center',
-    },
-    emptyText: {
-      color: colors.text.muted,
-    },
-    totalFooterRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      backgroundColor: colors.brand.tint,
-      paddingHorizontal: scale(16, metrics),
-      paddingVertical: scale(14, metrics),
-    },
-    totalLabelText: {
-      fontSize: moderateScale(14, 0.3, metrics),
-      fontWeight: fontWeights.bold,
-      color: colors.brand.primary,
-      letterSpacing: 0.5,
-    },
-    totalValueText: {
-      fontSize: moderateScale(16, 0.3, metrics),
-      fontWeight: fontWeights.bold,
-      color: colors.brand.primary,
     },
   });
 };

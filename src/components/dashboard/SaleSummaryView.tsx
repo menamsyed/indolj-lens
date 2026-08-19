@@ -1,18 +1,24 @@
 import React, { useMemo } from 'react';
 import {
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { VectorIcon } from '../common/VectorIcon';
+import { DataTable, DataTableColumn } from '../common/DataTable';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
-import { typography, fontWeights } from '../../styles/typography';
+import { typography } from '../../styles/typography';
 import { SaleSummaryRecord } from '../../types/dashboard';
 import { ScreenMetrics, moderateScale, scale } from '../../utils/responsive';
+
+const COLUMNS: DataTableColumn<SaleSummaryRecord>[] = [
+  { key: 'tokenNo', header: 'Token no.', flex: 1.2, renderCell: (row) => row.tokenNo },
+  { key: 'time', header: 'Time', flex: 1, align: 'center', renderCell: (row) => row.time },
+  { key: 'branch', header: 'Branch', flex: 1.2, align: 'right', renderCell: (row) => row.branch },
+];
 
 export interface SaleSummaryViewProps {
   dateLabel?: string;
@@ -88,37 +94,13 @@ export function SaleSummaryView({
           <Text style={[typography.caption, styles.recordsCountText]}>{records.length} records</Text>
         </View>
 
-        {/* Records Table Card — bounded to the remaining space (flex: 1); only the rows scroll */}
-        <View style={styles.tableCard}>
-          <ScrollView style={styles.tableVerticalScroll}>
-            {/* Table Header */}
-            <View style={styles.tableHeaderRow}>
-              <Text style={[typography.bodyMedium, styles.headerCell, styles.cellToken]}>Token no.</Text>
-              <Text style={[typography.bodyMedium, styles.headerCell, styles.cellTime]}>Time</Text>
-              <Text style={[typography.bodyMedium, styles.headerCell, styles.cellBranch]}>Branch</Text>
-            </View>
-
-            {/* Table Rows */}
-            {records.map((row, idx) => (
-              <View
-                key={`${row.tokenNo}-${idx}`}
-                style={[
-                  styles.tableRow,
-                  idx % 2 === 1 && styles.tableRowAlt,
-                ]}
-              >
-                <Text style={[typography.bodyMedium, styles.cellTextBold, styles.cellToken]}>{row.tokenNo}</Text>
-                <Text style={[typography.bodyMedium, styles.cellText, styles.cellTime]}>{row.time}</Text>
-                <Text style={[typography.bodyMedium, styles.cellText, styles.cellBranch]}>{row.branch}</Text>
-              </View>
-            ))}
-          </ScrollView>
-
-          {/* Total Footer Row — pinned outside the scroll, always visible */}
-          <View style={styles.totalFooterRow}>
-            <Text style={[typography.bodyMedium, styles.totalFooterText]}>TOTAL</Text>
-          </View>
-        </View>
+        {/* Records Table — bounded to the remaining space (flex: 1); only the rows scroll */}
+        <DataTable
+          columns={COLUMNS}
+          data={records}
+          keyExtractor={(row, idx) => `${row.tokenNo}-${idx}`}
+          footer={{ label: 'TOTAL' }}
+        />
       </View>
     </View>
   );
@@ -191,13 +173,11 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       backgroundColor: colors.surface.card,
       borderRadius: moderateScale(18, 0.5, metrics),
       padding: moderateScale(16, 0.5, metrics),
-      borderWidth: 1,
-      borderColor: colors.border.light,
       shadowColor: colors.neutral.black,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
-      shadowRadius: 6,
-      elevation: 2,
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 3,
     },
     iconSquare: {
       width: iconSquareSize,
@@ -224,76 +204,6 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
     },
     recordsCountText: {
       color: colors.text.secondary,
-    },
-    tableCard: {
-      flex: 1,
-      backgroundColor: colors.surface.card,
-      borderRadius: moderateScale(20, 0.5, metrics),
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: colors.border.light,
-      shadowColor: colors.neutral.black,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 3,
-    },
-    tableVerticalScroll: {
-      flex: 1,
-    },
-    tableHeaderRow: {
-      flexDirection: 'row',
-      backgroundColor: colors.brand.primary,
-      paddingHorizontal: scale(16, metrics),
-      paddingVertical: scale(14, metrics),
-    },
-    headerCell: {
-      fontSize: moderateScale(13.5, 0.3, metrics),
-      fontWeight: fontWeights.bold,
-      color: colors.text.white,
-    },
-    tableRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: scale(16, metrics),
-      paddingVertical: scale(14, metrics),
-      backgroundColor: colors.surface.card,
-      borderBottomWidth: 1,
-      borderColor: colors.border.light,
-    },
-    tableRowAlt: {
-      backgroundColor: colors.neutral.gray50,
-    },
-    cellToken: {
-      flex: 1.2,
-    },
-    cellTime: {
-      flex: 1,
-      textAlign: 'center',
-    },
-    cellBranch: {
-      flex: 1.2,
-      textAlign: 'right',
-    },
-    cellTextBold: {
-      fontSize: moderateScale(14, 0.3, metrics),
-      fontWeight: fontWeights.bold,
-      color: colors.text.primary,
-    },
-    cellText: {
-      fontSize: moderateScale(13.5, 0.3, metrics),
-      color: colors.text.primary,
-    },
-    totalFooterRow: {
-      backgroundColor: colors.brand.tint,
-      paddingHorizontal: scale(16, metrics),
-      paddingVertical: scale(14, metrics),
-    },
-    totalFooterText: {
-      fontSize: moderateScale(14, 0.3, metrics),
-      fontWeight: fontWeights.bold,
-      color: colors.brand.primary,
-      letterSpacing: 0.5,
     },
   });
 };
