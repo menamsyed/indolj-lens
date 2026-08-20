@@ -32,7 +32,7 @@
 - **Icons**: hand-drawn SVGs via `react-native-svg` — no icon font/library dependency
 - **Date picker**: `@react-native-community/datetimepicker` (Custom date-range mode in the filter sheet)
 - **Dev tooling**: `reactotron-react-native` (dev-only, mirrors every API request/response/error), ESLint (`@react-native/eslint-config`), Jest (`@react-native/jest-preset`)
-- **Native**: Android — Gradle, `applicationId`/`namespace` = `com.indoljmerchantapp`. iOS — CocoaPods, Xcode workspace; **`PRODUCT_BUNDLE_IDENTIFIER` is still the unmodified RN template default** (see divergences below).
+- **Native**: Android — Gradle, `applicationId`/`namespace` = `com.indolj.lens`. iOS — CocoaPods, Xcode workspace; **`PRODUCT_BUNDLE_IDENTIFIER` is still the unmodified RN template default** (see divergences below).
 
 ### Architectural Pattern
 - **Container hook pattern**: screens/components hold JSX only; all state, validation, and API calls live in a co-located hook in `src/hooks/` (e.g. `LoginScreen`/`LoginForm` are presentation, `useLoginContainer` owns everything else).
@@ -138,7 +138,7 @@ Builds on the 4-element tuple login (`docs/auth.md`) with per-merchant routing:
 ## Known dead code / divergences (as of 2026-08-17)
 
 - **Dead files**, unreferenced anywhere: `src/screens/DashboardScreenPlaceholder.tsx`, `src/components/CurvedTabBarBackground.tsx`, `src/components/common/CustomInput.tsx`.
-- **iOS bundle identifier was never customized**: `ios/IndoljMerchantApp.xcodeproj/project.pbxproj`'s `PRODUCT_BUNDLE_IDENTIFIER` is still the RN template default (`org.reactjs.native.example.$(PRODUCT_NAME...)`). Android's `applicationId`/`namespace` (`com.indoljmerchantapp`) was set correctly.
+- **iOS bundle identifier was never customized**: `ios/IndoljMerchantApp.xcodeproj/project.pbxproj`'s `PRODUCT_BUNDLE_IDENTIFIER` is still the RN template default (`org.reactjs.native.example.$(PRODUCT_NAME...)`). Android's `applicationId`/`namespace` (`com.indolj.lens`) was set correctly.
 - **Rebrand in flight**: `app.json`'s `displayName` and several in-app strings already say "Indolj Lens" (the current branch is `feature/indolj-lens`), but the package name, native project names, and bundle IDs still say `IndoljMerchantApp`.
 - **Pre-existing `tsc --noEmit` errors** (5, unrelated to any specific feature): implicit-`any` on the Reactotron import in `api/client.ts`; a missing `NodeJS` namespace type in `ToastContext.tsx`.
 - **`types/dashboard.ts`'s `SaleSummaryRecord`** only declares `tokenNo`/`time`/`branch`; `DashboardScreen`'s actual mapped records also carry `orderType`/`saleAmount`. Not a compiler error (assigned via `.map()`, not an object literal), but the type doesn't reflect real usage.

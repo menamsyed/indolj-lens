@@ -1,4 +1,4 @@
-package com.indoljmerchantapp
+package com.indolj.lens
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

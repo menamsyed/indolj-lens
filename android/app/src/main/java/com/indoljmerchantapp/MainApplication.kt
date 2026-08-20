@@ -1,4 +1,4 @@
-package com.indoljmerchantapp
+package com.indolj.lens
 
 import android.app.Application
 import com.facebook.react.PackageList

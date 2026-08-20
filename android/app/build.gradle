@@ -77,9 +77,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.indoljmerchantapp"
+    namespace "com.indolj.lens"
     defaultConfig {
-        applicationId "com.indoljmerchantapp"
+        applicationId "com.indolj.lens"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
