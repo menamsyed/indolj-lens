@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography, fontWeights } from '../../styles/typography';
+import { formatCurrency, parseNumber } from '../../utils/formatters';
 import { ScreenMetrics, moderateScale, scale } from '../../utils/responsive';
 
 export interface DataTableColumn<T> {
@@ -280,5 +281,74 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) =>
       color: colors.brand.primary,
     },
   });
+
+// Column meaning is read from the real header name, not its position — table column order
+// isn't guaranteed to stay fixed across endpoints (see docs/POS_DASHBOARD_WORKFLOW.md Step 6.7).
+export function formatMatrixCell(cell: string | number | null | undefined, headerName: string): string {
+  if (cell === null || cell === undefined || cell === '') return '—';
+  const label = headerName.toLowerCase();
+  if (label.includes('percentage') || label.includes('share')) {
+    return `${parseNumber(cell)}%`;
+  }
+  if (
+    label.includes('sales') ||
+    label.includes('amount') ||
+    label.includes('revenue') ||
+    label.includes('forcast') ||
+    label.includes('profit')
+  ) {
+    return formatCurrency(cell);
+  }
+  return String(cell);
+}
+
+export interface MatrixDataTableProps {
+  thead: string[];
+  tbody: (string | number)[][];
+  total?: number | string;
+}
+
+type MatrixRow = (string | number)[];
+
+// Thin wrapper around DataTable for API responses shaped as a thead/tbody matrix (branch-wise,
+// item-wise, category-wise, and online-orders reports all share this shape) — column names,
+// widths/alignment, cell formatting, and the TOTAL footer are all derived here so callers never
+// need to hand-build a DataTableColumn[] or hardcode a column name of their own.
+export function MatrixDataTable({ thead, tbody, total }: MatrixDataTableProps): React.JSX.Element {
+  // thead and tbody aren't guaranteed to agree on column count — a live branch-wise-sales
+  // response has returned only 2 header names for 6-column rows. Render every column the DATA
+  // actually has (the widest row, or thead.length if there's no data yet), with a blank header
+  // label for any column past the end of `thead`, so real values are never silently dropped
+  // just because their header name wasn't sent.
+  const columnCount = Math.max(thead.length, tbody[0]?.length ?? 0);
+  const columns: DataTableColumn<MatrixRow>[] = useMemo(
+    () =>
+      Array.from({ length: columnCount }, (_, idx) => {
+        const header = thead[idx] ?? '';
+        return {
+          key: `col-${idx}`,
+          header,
+          width: idx === 0 ? 150 : 110,
+          align: idx === 0 ? 'left' : 'right',
+          renderCell: (row: MatrixRow) => formatMatrixCell(row[idx], header),
+        };
+      }),
+    [thead, columnCount]
+  );
+
+  // `total` can arrive as an empty array (`[]`) from the API when there's no data for the
+  // period — that's truthy in JS, so only a real scalar is treated as an actual total.
+  const totalAmount =
+    typeof total === 'number' || typeof total === 'string' ? formatCurrency(total) : null;
+
+  return (
+    <DataTable
+      columns={columns}
+      data={tbody}
+      keyExtractor={(_row, idx) => `matrix-row-${idx}`}
+      footer={totalAmount ? { label: 'TOTAL', value: totalAmount } : undefined}
+    />
+  );
+}
 
 export default DataTable;

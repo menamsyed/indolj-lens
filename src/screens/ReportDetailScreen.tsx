@@ -46,8 +46,6 @@ export function ReportDetailScreen(): React.JSX.Element {
           title={params.title}
           subtitle={params.dateRangeLabel}
           tableData={params.tableData}
-          defaultHead={params.defaultHead}
-          defaultRows={[]}
           onBackPress={handleBackPress}
         />
       )}

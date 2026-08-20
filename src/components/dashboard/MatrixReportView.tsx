@@ -6,43 +6,18 @@ import {
   View,
 } from 'react-native';
 import { VectorIcon } from '../common/VectorIcon';
-import { DataTable, DataTableColumn } from '../common/DataTable';
+import { MatrixDataTable } from '../common/DataTable';
 import { useTheme } from '../../context/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { MatrixTableResponse } from '../../api/services/widgetService';
-import { formatCurrency, parseNumber } from '../../utils/formatters';
 import { ScreenMetrics, moderateScale, scale } from '../../utils/responsive';
-
-type MatrixRow = (string | number)[];
-
-// Column meaning is read from the real header name, not its position — table column order
-// isn't guaranteed to stay fixed across endpoints (see docs/POS_DASHBOARD_WORKFLOW.md Step 6.7).
-function formatMatrixCell(cell: string | number | null | undefined, headerName: string): string {
-  if (cell === null || cell === undefined || cell === '') return '—';
-  const label = headerName.toLowerCase();
-  if (label.includes('percentage') || label.includes('share')) {
-    return `${parseNumber(cell)}%`;
-  }
-  if (
-    label.includes('sales') ||
-    label.includes('amount') ||
-    label.includes('revenue') ||
-    label.includes('forcast') ||
-    label.includes('profit')
-  ) {
-    return formatCurrency(cell);
-  }
-  return String(cell);
-}
 
 export interface MatrixReportViewProps {
   title: string;
   subtitle?: string;
   tableData?: MatrixTableResponse | null;
-  defaultHead?: string[];
-  defaultRows?: (string | number)[][];
   onBackPress?: () => void;
 }
 
@@ -50,41 +25,12 @@ export function MatrixReportView({
   title,
   subtitle = '11 Aug 2026 - 11 Aug 2026',
   tableData,
-  defaultHead = ['Name', 'Sales', 'Qty', 'Share'],
-  defaultRows = [],
   onBackPress,
 }: MatrixReportViewProps): React.JSX.Element {
   const { colors } = useTheme();
   const metrics = useResponsive();
   const styles = useMemo(() => createStyles(colors, metrics), [colors, metrics]);
-  const headers = tableData?.thead && tableData.thead.length > 0 ? tableData.thead : defaultHead;
-  const rows = tableData?.tbody && tableData.tbody.length > 0 ? tableData.tbody : defaultRows;
-  const totalAmount = tableData?.total ? formatCurrency(tableData.total) : null;
-
-  // First column (usually a name/label) gets more room; every other real column gets a fixed
-  // width and the table scrolls horizontally — don't silently drop columns past the 4th, several
-  // real endpoints (branch-wise-sales, new-order-list) return 6.
-  //
-  // thead and tbody aren't guaranteed to agree on column count — a live branch-wise-sales
-  // response has returned only 2 header names for 6-column rows. Render every column the DATA
-  // actually has (the widest row, or headers.length if there's no data yet), with a blank header
-  // label for any column past the end of `headers`, so real values are never silently dropped
-  // just because their header name wasn't sent.
-  const columnCount = Math.max(headers.length, rows[0]?.length ?? 0);
-  const columns: DataTableColumn<MatrixRow>[] = useMemo(
-    () =>
-      Array.from({ length: columnCount }, (_, idx) => {
-        const header = headers[idx] ?? '';
-        return {
-          key: `col-${idx}`,
-          header,
-          width: idx === 0 ? 150 : 110,
-          align: idx === 0 ? 'left' : 'right',
-          renderCell: (row: MatrixRow) => formatMatrixCell(row[idx], header),
-        };
-      }),
-    [headers, columnCount]
-  );
+  const rows = tableData?.tbody ?? [];
 
   return (
     <View style={styles.container}>
@@ -114,13 +60,10 @@ export function MatrixReportView({
         </View>
 
         {/* Matrix Table — bounded to the remaining space (flex: 1); scrolls both vertically
-            (rows) and horizontally (wide tables, 5-6+ columns) inside DataTable itself */}
-        <DataTable
-          columns={columns}
-          data={rows}
-          keyExtractor={(_row, idx) => `matrix-row-${idx}`}
-          footer={totalAmount ? { label: 'TOTAL', value: totalAmount } : undefined}
-        />
+            (rows) and horizontally (wide tables, 5-6+ columns) inside DataTable itself.
+            Column names, cell formatting, and the TOTAL footer are all derived from the raw
+            thead/tbody/total response fields inside MatrixDataTable — nothing hardcoded here. */}
+        <MatrixDataTable thead={tableData?.thead ?? []} tbody={rows} total={tableData?.total} />
       </View>
     </View>
   );

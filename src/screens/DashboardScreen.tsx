@@ -234,7 +234,6 @@ export function DashboardScreen(): React.JSX.Element {
               reportType: 'branch-wise',
               title: 'Branch Wise Sales',
               tableData: branchWise,
-              defaultHead: ['Branch Name', 'Sales', 'Orders', 'Share %'],
               dateRangeLabel,
             })}
             isLoading={isLoading}
@@ -248,7 +247,6 @@ export function DashboardScreen(): React.JSX.Element {
               reportType: 'item-wise',
               title: 'Item Wise Sales',
               tableData: itemWise,
-              defaultHead: ['Item Name', 'Sales', 'Qty', 'Share %'],
               dateRangeLabel,
             })}
             isLoading={isLoading}
@@ -262,7 +260,6 @@ export function DashboardScreen(): React.JSX.Element {
               reportType: 'category-wise',
               title: 'Category Wise Sales',
               tableData: categoryWise,
-              defaultHead: ['Category Name', 'Sales', 'Qty', 'Share %'],
               dateRangeLabel,
             })}
             isLoading={isLoading}
@@ -276,7 +273,6 @@ export function DashboardScreen(): React.JSX.Element {
               reportType: 'online-orders',
               title: 'Online Orders List',
               tableData: newOrderList,
-              defaultHead: ['Token no.', 'Time', 'Branch', 'Amount'],
               dateRangeLabel,
             })}
             isLoading={isLoading}

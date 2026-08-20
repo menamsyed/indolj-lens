@@ -15,7 +15,6 @@ export type ReportDetailParams =
       reportType: 'branch-wise' | 'item-wise' | 'category-wise' | 'online-orders';
       title: string;
       tableData: MatrixTableResponse | null;
-      defaultHead: string[];
       dateRangeLabel: string;
     };
 
