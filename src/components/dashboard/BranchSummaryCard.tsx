@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { VectorIcon } from '../common/VectorIcon';
 import { SkeletonLoader } from '../common/SkeletonLoader';
 import { useTheme } from '../../context/ThemeContext';
@@ -50,35 +49,39 @@ export function BranchSummaryCard({
   const displayDiscount = formatCurrency(discountAmount);
   const displaySalesTax = formatCurrency(salesTaxAmount);
 
-  const gradientColors: [string, string] = [colors.brand.pressed, colors.brand.primary];
-
   if (isLoading) {
     return (
-      <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardContainer}>
-        <SkeletonLoader width={100} height={12} borderRadius={3} style={styles.skeletonItem} />
-        <SkeletonLoader width={160} height={14} borderRadius={4} style={styles.skeletonItem} />
-        <SkeletonLoader width={120} height={28} borderRadius={6} style={styles.skeletonItem} />
-        <View style={styles.tilesGrid}>
-          <View style={styles.tilesRow}>
-            {[1, 2].map((key) => (
-              <View key={key} style={styles.tileCard}>
-                <SkeletonLoader width={40} height={40} borderRadius={12} style={styles.skeletonTileIcon} />
-                <SkeletonLoader width={60} height={11} borderRadius={3} style={styles.skeletonTileLabel} />
-                <SkeletonLoader width={70} height={16} borderRadius={4} />
+      <View style={styles.cardShadowWrapper}>
+        <View style={styles.cardContainer}>
+          <View style={styles.content}>
+            <View style={styles.bannerHeaderRow}>
+              <SkeletonLoader width={100} height={12} borderRadius={3} style={styles.skeletonItem} />
+              <SkeletonLoader width={160} height={14} borderRadius={4} />
+            </View>
+            <SkeletonLoader width={120} height={28} borderRadius={6} style={styles.skeletonItem} />
+            <View style={styles.tilesGrid}>
+              <View style={styles.tilesRow}>
+                {[1, 2].map((key) => (
+                  <View key={key} style={styles.tileCard}>
+                    <SkeletonLoader width={40} height={40} borderRadius={12} style={styles.skeletonTileIcon} />
+                    <SkeletonLoader width={60} height={11} borderRadius={3} style={styles.skeletonTileLabel} />
+                    <SkeletonLoader width={70} height={16} borderRadius={4} />
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-          <View style={styles.tilesRow}>
-            {[3, 4].map((key) => (
-              <View key={key} style={styles.tileCard}>
-                <SkeletonLoader width={40} height={40} borderRadius={12} style={styles.skeletonTileIcon} />
-                <SkeletonLoader width={60} height={11} borderRadius={3} style={styles.skeletonTileLabel} />
-                <SkeletonLoader width={70} height={16} borderRadius={4} />
+              <View style={styles.tilesRow}>
+                {[3, 4].map((key) => (
+                  <View key={key} style={styles.tileCard}>
+                    <SkeletonLoader width={40} height={40} borderRadius={12} style={styles.skeletonTileIcon} />
+                    <SkeletonLoader width={60} height={11} borderRadius={3} style={styles.skeletonTileLabel} />
+                    <SkeletonLoader width={70} height={16} borderRadius={4} />
+                  </View>
+                ))}
               </View>
-            ))}
+            </View>
           </View>
         </View>
-      </LinearGradient>
+      </View>
     );
   }
 
@@ -89,8 +92,10 @@ export function BranchSummaryCard({
   const isTaxNegative = salesTaxGrowth.startsWith('-');
 
   return (
-    <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardContainer}>
-      {/* Header Banner Row with Top Right Percentage Chip */}
+    <View style={styles.cardShadowWrapper}>
+    <View style={styles.cardContainer}>
+    <View style={styles.content}>
+      {/* Header Row with Top Right Percentage Chip */}
       <View style={styles.bannerHeaderRow}>
         <View>
           <Text style={[typography.caption, styles.bannerTitle]}>TOTAL SALES</Text>
@@ -219,7 +224,9 @@ export function BranchSummaryCard({
           </View>
         </View>
       </View>
-    </LinearGradient>
+      </View>
+    </View>
+    </View>
   );
 }
 
@@ -227,30 +234,41 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
   const iconBoxSize = scale(40, metrics);
 
   return StyleSheet.create({
-    cardContainer: {
+    cardShadowWrapper: {
       borderRadius: moderateScale(20, 0.5, metrics),
-      padding: moderateScale(18, 0.5, metrics),
       marginBottom: scale(16, metrics),
       shadowColor: colors.neutral.black,
       shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.12,
+      shadowOpacity: 0.1,
       shadowRadius: 16,
       elevation: 6,
+    },
+    cardContainer: {
+      backgroundColor: colors.surface.card,
+      borderRadius: moderateScale(20, 0.5, metrics),
+      overflow: 'hidden',
+    },
+    // Single padded container for the whole card body — header row and the sales
+    // figure/tiles below it now share one padding box (rather than two separately
+    // padded sections), so their left/right edges always line up exactly.
+    content: {
+      padding: moderateScale(18, 0.5, metrics),
     },
     bannerHeaderRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
+      marginBottom: scale(14, metrics),
     },
     bannerTitle: {
       fontSize: moderateScale(11, 0.3, metrics),
-      color: 'rgba(255, 255, 255, 0.75)',
+      color: colors.text.muted,
       letterSpacing: 0.8,
       marginBottom: scale(2, metrics),
     },
     dateSubtitle: {
       fontSize: moderateScale(13, 0.3, metrics),
-      color: 'rgba(255, 255, 255, 0.85)',
+      color: colors.text.secondary,
       marginBottom: scale(6, metrics),
     },
     topGrowthChip: {
@@ -278,13 +296,13 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
     },
     bigSalesValue: {
       fontSize: moderateScale(32, 0.3, metrics),
-      color: colors.text.white,
+      color: colors.text.primary,
       fontWeight: fontWeights.bold,
       marginBottom: scale(2, metrics),
     },
     prevPeriodSubtitle: {
       fontSize: moderateScale(12, 0.3, metrics),
-      color: 'rgba(255, 255, 255, 0.65)',
+      color: colors.text.muted,
       marginBottom: scale(16, metrics),
     },
     tilesGrid: {
@@ -306,9 +324,14 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       flexShrink: 1,
       flexBasis: 0,
       minWidth: 0,
-      backgroundColor: 'rgba(255, 255, 255, 0.14)',
+      backgroundColor: colors.neutral.gray50,
       borderRadius: moderateScale(14, 0.5, metrics),
       padding: moderateScale(12, 0.5, metrics),
+      shadowColor: colors.neutral.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
     },
     iconBox: {
       width: iconBoxSize,
@@ -331,13 +354,13 @@ const createStyles = (colors: Colors, metrics: ScreenMetrics) => {
       backgroundColor: colors.chart.purpleBg,
     },
     tileLabel: {
-      color: 'rgba(255, 255, 255, 0.75)',
+      color: colors.text.muted,
       marginBottom: scale(2, metrics),
       fontSize: moderateScale(11, 0.3, metrics),
     },
     tileValue: {
       fontSize: moderateScale(16, 0.3, metrics),
-      color: colors.text.white,
+      color: colors.text.primary,
       fontWeight: fontWeights.bold,
       marginBottom: scale(6, metrics),
     },
